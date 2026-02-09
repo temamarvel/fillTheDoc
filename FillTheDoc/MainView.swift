@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import UniformTypeIdentifiers
 
 // MARK: - Main screen
 
@@ -111,117 +110,6 @@ struct MainView: View {
         var isDir: ObjCBool = false
         let exists = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
         return exists && !isDir.boolValue
-    }
-}
-
-// MARK: - Drop zone
-
-private struct DropZoneCard: View {
-    let title: String
-    let subtitle: String
-    
-    let isValid: Bool
-    let isDropping: Bool
-    
-    @Binding var path: String
-    let onDropURLs: ([URL]) -> Void
-    
-    private var borderColor: Color {
-        if isValid { return .green }
-        return .red
-    }
-    
-    private var fillColor: Color {
-        // лёгкий фон, чтобы зона читалась
-        if isDropping { return Color.primary.opacity(0.06) }
-        return Color.primary.opacity(0.03)
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title)
-                    .font(.headline)
-                
-                Spacer()
-                
-                StatusBadge(isValid: isValid)
-            }
-            
-            Text(subtitle)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            
-            ZStack {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(fillColor)
-                
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(borderColor.opacity(isDropping ? 1.0 : 0.85),
-                                  style: StrokeStyle(lineWidth: isDropping ? 3 : 2, dash: [8, 6]))
-                
-                VStack(spacing: 8) {
-                    Image(systemName: "doc.badge.plus")
-                        .font(.system(size: 34, weight: .semibold))
-                    
-                    Text(isValid ? "Файл добавлен" : "Перетащи файл сюда")
-                        .font(.callout.weight(.semibold))
-                }
-                .foregroundStyle(borderColor)
-            }
-            .frame(height: 160)
-            .onDrop(of: [UTType.fileURL], isTargeted: dropTargetBinding) { providers in
-                handleDrop(providers: providers)
-            }
-            
-            TextField("Путь к файлу", text: $path)
-                .textFieldStyle(.roundedBorder)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(borderColor.opacity(0.75), lineWidth: 1)
-                )
-                .help("Можно вставить/отредактировать путь вручную")
-        }
-        .padding(14)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
-    
-    private var dropTargetBinding: Binding<Bool> {
-        Binding(
-            get: { isDropping },
-            set: { _ in }
-        )
-    }
-    
-    private func handleDrop(providers: [NSItemProvider]) -> Bool {
-        // Берём первый provider с fileURL
-        guard let provider = providers.first(where: { $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) }) else {
-            return false
-        }
-        
-        provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
-            guard let data = item as? Data,
-                  let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
-            
-            DispatchQueue.main.async {
-                onDropURLs([url])
-            }
-        }
-        return true
-    }
-}
-
-private struct StatusBadge: View {
-    let isValid: Bool
-    
-    var body: some View {
-        Text(isValid ? "OK" : "Нужно")
-            .font(.caption.weight(.semibold))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(isValid ? Color.green.opacity(0.18) : Color.red.opacity(0.18),
-                        in: Capsule())
-            .foregroundStyle(isValid ? Color.green : Color.red)
     }
 }
 
