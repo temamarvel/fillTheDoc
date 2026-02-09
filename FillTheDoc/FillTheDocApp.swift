@@ -11,7 +11,7 @@ import SwiftUI
 struct FillTheDocApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainView()
         }
     }
 }
