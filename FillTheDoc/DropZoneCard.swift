@@ -82,17 +82,27 @@ struct DropZoneCard: View {
     }
     
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
-        // Берём первый provider с fileURL
-        guard let provider = providers.first(where: { $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) }) else {
-            return false
+        let fileProviders = providers.filter {
+            $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier)
         }
+        guard !fileProviders.isEmpty else { return false }
         
-        provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
-            guard let data = item as? Data,
-                  let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
-            
-            DispatchQueue.main.async {
-                onDropURLs([url])
+        for provider in fileProviders {
+            provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
+                let url: URL?
+                if let u = item as? URL {
+                    url = u
+                } else if let data = item as? Data {
+                    url = URL(dataRepresentation: data, relativeTo: nil)
+                } else {
+                    url = nil
+                }
+                
+                guard let url else { return }
+                
+                DispatchQueue.main.async {
+                    onDropURLs([url])
+                }
             }
         }
         return true
