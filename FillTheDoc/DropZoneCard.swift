@@ -16,7 +16,7 @@ struct DropZoneCard: View {
     let subtitle: String
     
     let isValid: Bool
-    let isDropping: Bool
+    @State private var isDropping: Bool = false
     
     @Binding var path: String
     let onDropURLs: ([URL]) -> Void
@@ -65,7 +65,7 @@ struct DropZoneCard: View {
                 .foregroundStyle(borderColor)
             }
             .frame(height: 160)
-            .onDrop(of: [UTType.fileURL], isTargeted: dropTargetBinding) { providers in
+            .onDrop(of: [UTType.fileURL], isTargeted: $isDropping) { providers in
                 handleDrop(providers: providers)
             }
             
@@ -79,13 +79,6 @@ struct DropZoneCard: View {
         }
         .padding(14)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
-    
-    private var dropTargetBinding: Binding<Bool> {
-        Binding(
-            get: { isDropping },
-            set: { _ in }
-        )
     }
     
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
@@ -118,7 +111,6 @@ struct DropZoneCard: View {
                     title: "Шаблон (DOCX)",
                     subtitle: "Перетащи сюда файл шаблона",
                     isValid: false,
-                    isDropping: false,
                     path: $invalidPath,
                     onDropURLs: { _ in }
                 )
@@ -127,7 +119,6 @@ struct DropZoneCard: View {
                     title: "Реквизиты",
                     subtitle: "Файл с реквизитами клиента",
                     isValid: true,
-                    isDropping: false,
                     path: $validPath,
                     onDropURLs: { _ in }
                 )
@@ -136,7 +127,6 @@ struct DropZoneCard: View {
                     title: "Dragging state",
                     subtitle: "Имитируем drag-over",
                     isValid: false,
-                    isDropping: true,
                     path: $invalidPath,
                     onDropURLs: { _ in }
                 )

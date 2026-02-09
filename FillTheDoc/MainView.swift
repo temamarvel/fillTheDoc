@@ -13,9 +13,6 @@ struct MainView: View {
     @State private var templatePath: String = ""
     @State private var detailsPath: String = ""
     
-    @State private var isDroppingTemplate = false
-    @State private var isDroppingDetails = false
-    
     private var templateURL: URL? { url(from: templatePath) }
     private var detailsURL: URL? { url(from: detailsPath) }
     
@@ -34,7 +31,6 @@ struct MainView: View {
                     title: "Шаблон (DOCX)",
                     subtitle: "Перетащи сюда файл шаблона",
                     isValid: isTemplateValid,
-                    isDropping: isDroppingTemplate,
                     path: $templatePath,
                     onDropURLs: { urls in
                         // Берем первый файл
@@ -48,7 +44,6 @@ struct MainView: View {
                     title: "Реквизиты",
                     subtitle: "Перетащи сюда файл с реквизитами (pdf/doc/xls/…)",
                     isValid: isDetailsValid,
-                    isDropping: isDroppingDetails,
                     path: $detailsPath,
                     onDropURLs: { urls in
                         if let url = urls.first {
