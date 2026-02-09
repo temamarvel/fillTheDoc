@@ -32,6 +32,14 @@ struct DropZoneCard: View {
         return Color.primary.opacity(0.03)
     }
     
+    private var iconName: String {
+        isValid ? "checkmark.circle.fill" : "doc.badge.plus"
+    }
+    
+    private var statusText: String {
+        isValid ? "Файл добавлен" : "Перетащи файл сюда"
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
@@ -56,10 +64,12 @@ struct DropZoneCard: View {
                                   style: StrokeStyle(lineWidth: isDropping ? 3 : 2, dash: [8, 6]))
                 
                 VStack(spacing: 8) {
-                    Image(systemName: "doc.badge.plus")
+                    Image(systemName: iconName)
                         .font(.system(size: 34, weight: .semibold))
+                        .symbolRenderingMode(.hierarchical)
+                        .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isValid)
                     
-                    Text(isValid ? "Файл добавлен" : "Перетащи файл сюда")
+                    Text(statusText)
                         .font(.callout.weight(.semibold))
                 }
                 .foregroundStyle(borderColor)

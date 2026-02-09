@@ -78,7 +78,6 @@ struct MainView: View {
             }
         }
         .padding(20)
-        .frame(minWidth: 860, minHeight: 360)
     }
     
     // MARK: - Actions
