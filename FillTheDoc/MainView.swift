@@ -83,12 +83,24 @@ struct MainView: View {
     // MARK: - Actions
     
     private func runFill() {
-        guard let templateURL, let detailsURL else { return }
-        // Тут будет твой pipeline:
-        // 1) извлечь реквизиты из detailsURL (LLM)
-        // 2) скопировать templateURL
-        // 3) заполнить плейсхолдеры и сохранить результат
-        print("Run with template:", templateURL.path, "details:", detailsURL.path)
+        guard let detailsURL else { return }
+        
+        let extractor = DocumentTextExtractorService()
+        
+        Task {
+            do {
+                let result = try extractor.extract(from: detailsURL)
+                print("Method:", result.method)
+                print("Chars:", result.diagnostics.producedChars)
+                print("Needs OCR:", result.needsOCR)
+                print("Notes:", result.diagnostics.notes)
+                print("Errors:", result.diagnostics.errors)
+                
+                // result.text -> отправляешь в LLM
+            } catch {
+                print("Extraction failed:", error)
+            }
+        }
     }
     
     // MARK: - Helpers
