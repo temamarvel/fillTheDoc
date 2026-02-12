@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import OpenAIClient
 
 // MARK: - Main screen
 
@@ -96,7 +97,14 @@ struct MainView: View {
                 print("Notes:", result.diagnostics.notes)
                 print("Errors:", result.diagnostics.errors)
                 
-                // result.text -> отправляешь в LLM
+                //TODO: real api key
+                let apiKey = ""
+                let client = OpenAIClient(apiKey: apiKey, model: "gpt-4.1-mini")
+                
+                let (json, status) = try await client.request(
+                    system: "Extract requisites and return ONLY a JSON object.",
+                    user: result.text
+                )
             } catch {
                 print("Extraction failed:", error)
             }

@@ -1,0 +1,15 @@
+{
+  "originHash" : "e3841b379203a839caa8af216760503b663df54d98c445708094f790b4998d97",
+  "pins" : [
+    {
+      "identity" : "openaiclient",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/temamarvel/OpenAIClient.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "510772133748193ab2f645c85743bb4ca4d9c385"
+      }
+    }
+  ],
+  "version" : 3
+}
