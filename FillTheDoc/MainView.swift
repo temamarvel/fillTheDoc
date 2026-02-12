@@ -14,6 +14,13 @@ struct MainView: View {
     @State private var templatePath: String = ""
     @State private var detailsPath: String = ""
     
+    @State private var apiKey: String? = nil
+    @State private var showAPIKeyPrompt: Bool = false
+    @State private var keychainErrorText: String? = nil
+    
+    private let keychain = KeychainService()
+    private let keychainAccount = "openai_api_key"
+    
     private var templateURL: URL? { url(from: templatePath) }
     private var detailsURL: URL? { url(from: detailsPath) }
     
@@ -72,6 +79,11 @@ struct MainView: View {
                 Spacer()
             }
             
+            if apiKey == nil || apiKey?.isEmpty == true {
+                Text("Добавь API ключ (появится окно ввода).")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
             if !canRun {
                 Text("Добавь оба файла: шаблон и реквизиты.")
                     .font(.footnote)
@@ -79,6 +91,42 @@ struct MainView: View {
             }
         }
         .padding(20)
+        .onAppear {
+            loadAPIKey()
+        }
+        // ✅ Модалка ввода ключа (не уйдёт, пока не сохраним)
+        .sheet(isPresented: $showAPIKeyPrompt) {
+            APIKeyPromptView { enteredKey in
+                do {
+                    try keychain.saveString(enteredKey, account: keychainAccount)
+                    apiKey = enteredKey
+                    keychainErrorText = nil
+                } catch {
+                    keychainErrorText = "Не удалось сохранить ключ в Keychain: \(error.localizedDescription)"
+                    // если не сохранили — снова попросим
+                    apiKey = nil
+                    showAPIKeyPrompt = true
+                }
+            }
+        }
+    }
+    
+    private func loadAPIKey() {
+        do {
+            let loaded = try keychain.loadString(account: keychainAccount)
+            if let loaded, !loaded.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                apiKey = loaded
+                showAPIKeyPrompt = false
+                keychainErrorText = nil
+            } else {
+                apiKey = nil
+                showAPIKeyPrompt = true
+            }
+        } catch {
+            apiKey = nil
+            keychainErrorText = "Не удалось прочитать ключ из Keychain: \(error.localizedDescription)"
+            showAPIKeyPrompt = true
+        }
     }
     
     // MARK: - Actions
