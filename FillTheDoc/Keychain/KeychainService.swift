@@ -1,30 +1,25 @@
-//
-//  KeychainError.swift
-//  FillTheDoc
-//
-//  Created by Артем Денисов on 12.02.2026.
-//
-
-
 import Foundation
 import Security
 
 public enum KeychainError: Error, LocalizedError {
     case unexpectedStatus(OSStatus)
     case invalidData
+    case stringEncoding
     
     public var errorDescription: String? {
         switch self {
-        case .unexpectedStatus(let status):
-            return "Keychain error: \(status)"
-        case .invalidData:
-            return "Keychain returned invalid data"
+            case .unexpectedStatus(let status):
+                return "Keychain error: \(status)"
+            case .invalidData:
+                return "Keychain returned invalid data"
+            case .stringEncoding:
+                return "Keychain string encoding error"
         }
     }
 }
 
-/// Простой Keychain wrapper для строковых секретов (например API key).
-public final class KeychainService {
+/// Низкоуровневый сервис Keychain: хранение/чтение/удаление значений по account.
+public actor KeychainService {
     private let service: String
     
     public init(service: String = Bundle.main.bundleIdentifier ?? "FillTheDoc") {
@@ -32,22 +27,37 @@ public final class KeychainService {
     }
     
     public func saveString(_ value: String, account: String) throws {
-        let data = Data(value.utf8)
+        guard let data = value.data(using: .utf8) else { throw KeychainError.stringEncoding }
         
-        // Upsert: сначала удалим старое, потом добавим
-        try? delete(account: account)
-        
-        let query: [String: Any] = [
+        let baseQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
+            kSecAttrAccount as String: account
+        ]
+        
+        // Попробуем update (если item уже есть)
+        let attributesToUpdate: [String: Any] = [
             kSecValueData as String: data,
-            // доступность на этом Mac для текущего юзера (до логаута)
             kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
         ]
         
-        let status = SecItemAdd(query as CFDictionary, nil)
-        guard status == errSecSuccess else { throw KeychainError.unexpectedStatus(status) }
+        let updateStatus = SecItemUpdate(baseQuery as CFDictionary, attributesToUpdate as CFDictionary)
+        
+        if updateStatus == errSecSuccess {
+            return
+        }
+        
+        if updateStatus != errSecItemNotFound {
+            throw KeychainError.unexpectedStatus(updateStatus)
+        }
+        
+        // Если не найден — добавим
+        var addQuery = baseQuery
+        addQuery[kSecValueData as String] = data
+        addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+        
+        let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
+        guard addStatus == errSecSuccess else { throw KeychainError.unexpectedStatus(addStatus) }
     }
     
     public func loadString(account: String) throws -> String? {

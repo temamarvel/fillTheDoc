@@ -1,27 +1,13 @@
-//
-//  ContentView.swift
-//  FillTheDoc
-//
-//  Created by Artem Denisov on 09.02.2026.
-//
-
 import SwiftUI
 import OpenAIClient
 
-// MARK: - Main screen
-
 struct MainView: View {
+    @EnvironmentObject private var apiKeyStore: APIKeyStore
+    
     @State private var templatePath: String = ""
     @State private var detailsPath: String = ""
     
-    @State private var apiKey: String? = nil
-    @State private var showAPIKeyPrompt: Bool = false
-    @State private var keychainErrorText: String? = nil
-    
     @State private var isLoading: Bool = false
-    
-    private let keychain = KeychainService()
-    private let keychainAccount = "openai_api_key"
     
     private var templateURL: URL? { url(from: templatePath) }
     private var detailsURL: URL? { url(from: detailsPath) }
@@ -29,119 +15,92 @@ struct MainView: View {
     private var isTemplateValid: Bool { isExistingFile(templateURL) }
     private var isDetailsValid: Bool { isExistingFile(detailsURL) }
     
-    private var canRun: Bool { isTemplateValid && isDetailsValid }
+    private var canRun: Bool { isTemplateValid && isDetailsValid && apiKeyStore.hasKey }
     
     var body: some View {
-        
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Заполнение документа")
-                    .font(.title2.weight(.semibold))
-                
-                HStack(spacing: 16) {
-                    DropZoneCard(
-                        title: "Шаблон (DOCX)",
-                        subtitle: "Перетащи сюда файл шаблона",
-                        isValid: isTemplateValid,
-                        path: $templatePath,
-                        onDropURLs: { urls in
-                            // Берем первый файл
-                            if let url = urls.first {
-                                templatePath = url.path
-                            }
-                        }
-                    )
-                    
-                    DropZoneCard(
-                        title: "Реквизиты",
-                        subtitle: "Перетащи сюда файл с реквизитами (pdf/doc/xls/…)",
-                        isValid: isDetailsValid,
-                        path: $detailsPath,
-                        onDropURLs: { urls in
-                            if let url = urls.first {
-                                detailsPath = url.path
-                            }
-                        }
-                    )
-                }
-                
-                Divider()
-                
-                HStack {
-                    Spacer()
-                    
-                    Button {
-                        runFill()
-                    } label: {
-                        Text("Извлечь реквизиты и заполнить шаблон")
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Заполнение документа")
+                .font(.title2.weight(.semibold))
+            
+            HStack(spacing: 16) {
+                DropZoneCard(
+                    title: "Шаблон (DOCX)",
+                    subtitle: "Перетащи сюда файл шаблона",
+                    isValid: isTemplateValid,
+                    path: $templatePath,
+                    onDropURLs: { urls in
+                        if let url = urls.first { templatePath = url.path }
                     }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(!canRun || isLoading)
-                    
-                    Spacer()
-                }
+                )
                 
-                if apiKey == nil || apiKey?.isEmpty == true {
-                    Text("Добавь API ключ (появится окно ввода).")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-                if !canRun {
-                    Text("Добавь оба файла: шаблон и реквизиты.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(20)
-            .onAppear {
-                loadAPIKey()
-            }
-            // ✅ Модалка ввода ключа (не уйдёт, пока не сохраним)
-            .sheet(isPresented: $showAPIKeyPrompt) {
-                APIKeyPromptView { enteredKey in
-                    do {
-                        try keychain.saveString(enteredKey, account: keychainAccount)
-                        apiKey = enteredKey
-                        keychainErrorText = nil
-                    } catch {
-                        keychainErrorText = "Не удалось сохранить ключ в Keychain: \(error.localizedDescription)"
-                        // если не сохранили — снова попросим
-                        apiKey = nil
-                        showAPIKeyPrompt = true
+                DropZoneCard(
+                    title: "Реквизиты",
+                    subtitle: "Перетащи сюда файл с реквизитами (pdf/doc/xls/…)",
+                    isValid: isDetailsValid,
+                    path: $detailsPath,
+                    onDropURLs: { urls in
+                        if let url = urls.first { detailsPath = url.path }
                     }
-                }
-            }.overlay {
-                if isLoading {
-                    AIWaitingIndicator()
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                }
+                )
             }
-            .animation(.easeInOut(duration: 0.2), value: isLoading)
-        
-    }
-    
-    private func loadAPIKey() {
-        do {
-            let loaded = try keychain.loadString(account: keychainAccount)
-            if let loaded, !loaded.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                apiKey = loaded
-                showAPIKeyPrompt = false
-                keychainErrorText = nil
-            } else {
-                apiKey = nil
-                showAPIKeyPrompt = true
+            
+            Divider()
+            
+            HStack {
+                Spacer()
+                
+                Button {
+                    runFill()
+                } label: {
+                    Text("Извлечь реквизиты и заполнить шаблон")
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(!canRun || isLoading)
+                
+                Spacer()
             }
-        } catch {
-            apiKey = nil
-            keychainErrorText = "Не удалось прочитать ключ из Keychain: \(error.localizedDescription)"
-            showAPIKeyPrompt = true
+            
+            if !apiKeyStore.hasKey {
+                Text("Добавь API ключ (появится окно ввода).")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            
+            if !isTemplateValid || !isDetailsValid {
+                Text("Добавь оба файла: шаблон и реквизиты.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            
+            if let err = apiKeyStore.errorText {
+                Text(err)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
         }
+        .padding(20)
+        .sheet(isPresented: $apiKeyStore.isPromptPresented) {
+            APIKeyPromptView { enteredKey in
+                apiKeyStore.save(enteredKey)
+            }
+            .interactiveDismissDisabled(true) // модалка не закрывается свайпом/esc пока нет ключа
+        }
+        .overlay {
+            if isLoading {
+                AIWaitingIndicator()
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: isLoading)
     }
-    
-    // MARK: - Actions
     
     private func runFill() {
+        guard apiKeyStore.hasKey else {
+            apiKeyStore.isPromptPresented = true
+            return
+        }
         guard let detailsURL else { return }
         
         let extractor = DocumentTextExtractorService()
@@ -152,46 +111,25 @@ struct MainView: View {
             
             do {
                 let result = try extractor.extract(from: detailsURL)
+                
+                // пример: реальный клиент
+                // let client = OpenAIClient(apiKey: apiKeyStore.apiKey ?? "", model: "gpt-4o-mini")
+                // let (json, status) = try await client.request(
+                //     system: "Extract requisites and return ONLY a JSON object.",
+                //     user: result.text
+                // )
+                
                 print("Method:", result.method)
                 print("Chars:", result.diagnostics.producedChars)
-                print("Needs OCR:", result.needsOCR)
-                print("Notes:", result.diagnostics.notes)
-                print("Errors:", result.diagnostics.errors)
                 
-                
-                // ⬇️ Симуляция запроса к API (2–3 секунды)
-                try await Task.sleep(
-                    nanoseconds: UInt64.random(in: 2_000_000_000...3_000_000_000)
-                )
-                
-                // Симулируем "ответ API"
-                let fakeJSON = """
-            {
-                "company": "ООО Ромашка",
-                "director": "Иванов Иван Иванович",
-                "form": "ООО"
-            }
-            """
-                
-                print("JSON:", fakeJSON)
-                
-//                let client = OpenAIClient(apiKey: apiKey ?? "", model: "gpt-4o-mini")
-//                
-//                let (json, status) = try await client.request(
-//                    system: "Extract requisites and return ONLY a JSON object.",
-//                    user: result.text
-//                )
-                
-//                print("JSON:", json)
-//                print("HTTP Status:", status.httpStatus)
-//                print("Description:", status.description)
+                // симуляция
+                try await Task.sleep(nanoseconds: 2_200_000_000)
+                print("OK")
             } catch {
                 print("Extraction failed:", error)
             }
         }
     }
-    
-    // MARK: - Helpers
     
     private func url(from path: String) -> URL? {
         let trimmed = path.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -205,8 +143,4 @@ struct MainView: View {
         let exists = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
         return exists && !isDir.boolValue
     }
-}
-
-#Preview {
-    MainView()
 }
