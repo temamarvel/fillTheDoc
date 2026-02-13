@@ -145,14 +145,16 @@ struct MainView: View {
                 print("Notes:", result.diagnostics.notes)
                 print("Errors:", result.diagnostics.errors)
                 
-                //TODO: real api key
-                let apiKey = ""
-                let client = OpenAIClient(apiKey: apiKey, model: "gpt-4.1-mini")
+                let client = OpenAIClient(apiKey: apiKey ?? "", model: "gpt-4o-mini")
                 
                 let (json, status) = try await client.request(
                     system: "Extract requisites and return ONLY a JSON object.",
                     user: result.text
                 )
+                
+                print("JSON:", json)
+                print("HTTP Status:", status.httpStatus)
+                print("Description:", status.description)
             } catch {
                 print("Extraction failed:", error)
             }
