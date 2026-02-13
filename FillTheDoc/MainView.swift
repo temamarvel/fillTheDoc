@@ -32,7 +32,7 @@ struct MainView: View {
     private var canRun: Bool { isTemplateValid && isDetailsValid }
     
     var body: some View {
-        ZStack{
+        
             VStack(alignment: .leading, spacing: 16) {
                 Text("Заполнение документа")
                     .font(.title2.weight(.semibold))
@@ -111,14 +111,14 @@ struct MainView: View {
                         showAPIKeyPrompt = true
                     }
                 }
+            }.overlay {
+                if isLoading {
+                    AIWaitingIndicator()
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                }
             }
-            
-            
-            if isLoading {
-                AIBlockingOverlay(title: "Обрабатываю…")
-                    .transition(.opacity)
-            }
-        }
+            .animation(.easeInOut(duration: 0.2), value: isLoading)
+        
     }
     
     private func loadAPIKey() {
@@ -158,16 +158,33 @@ struct MainView: View {
                 print("Notes:", result.diagnostics.notes)
                 print("Errors:", result.diagnostics.errors)
                 
-                let client = OpenAIClient(apiKey: apiKey ?? "", model: "gpt-4o-mini")
                 
-                let (json, status) = try await client.request(
-                    system: "Extract requisites and return ONLY a JSON object.",
-                    user: result.text
+                // ⬇️ Симуляция запроса к API (2–3 секунды)
+                try await Task.sleep(
+                    nanoseconds: UInt64.random(in: 2_000_000_000...3_000_000_000)
                 )
                 
-                print("JSON:", json)
-                print("HTTP Status:", status.httpStatus)
-                print("Description:", status.description)
+                // Симулируем "ответ API"
+                let fakeJSON = """
+            {
+                "company": "ООО Ромашка",
+                "director": "Иванов Иван Иванович",
+                "form": "ООО"
+            }
+            """
+                
+                print("JSON:", fakeJSON)
+                
+//                let client = OpenAIClient(apiKey: apiKey ?? "", model: "gpt-4o-mini")
+//                
+//                let (json, status) = try await client.request(
+//                    system: "Extract requisites and return ONLY a JSON object.",
+//                    user: result.text
+//                )
+                
+//                print("JSON:", json)
+//                print("HTTP Status:", status.httpStatus)
+//                print("Description:", status.description)
             } catch {
                 print("Extraction failed:", error)
             }

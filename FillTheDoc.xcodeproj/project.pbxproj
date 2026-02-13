@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		3B7223592F3E5F1000E17F90 /* OpenAIClient in Frameworks */ = {isa = PBXBuildFile; productRef = 3B7223582F3E5F1000E17F90 /* OpenAIClient */; };
+		3B7223902F3FA87600E17F90 /* Shimmer in Frameworks */ = {isa = PBXBuildFile; productRef = 3B72238F2F3FA87600E17F90 /* Shimmer */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +28,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3B7223902F3FA87600E17F90 /* Shimmer in Frameworks */,
 				3B7223592F3E5F1000E17F90 /* OpenAIClient in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -71,6 +73,7 @@
 			name = FillTheDoc;
 			packageProductDependencies = (
 				3B7223582F3E5F1000E17F90 /* OpenAIClient */,
+				3B72238F2F3FA87600E17F90 /* Shimmer */,
 			);
 			productName = FillTheDoc;
 			productReference = 3B12811B2F39C4BE003B76B1 /* FillTheDoc.app */;
@@ -102,6 +105,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				3B7223572F3E5F1000E17F90 /* XCRemoteSwiftPackageReference "OpenAIClient" */,
+				3B72238E2F3FA87600E17F90 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3B12811C2F39C4BE003B76B1 /* Products */;
@@ -374,6 +378,14 @@
 				kind = branch;
 			};
 		};
+		3B72238E2F3FA87600E17F90 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/markiv/SwiftUI-Shimmer";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -381,6 +393,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3B7223572F3E5F1000E17F90 /* XCRemoteSwiftPackageReference "OpenAIClient" */;
 			productName = OpenAIClient;
+		};
+		3B72238F2F3FA87600E17F90 /* Shimmer */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3B72238E2F3FA87600E17F90 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */;
+			productName = Shimmer;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
