@@ -18,6 +18,8 @@ struct MainView: View {
     @State private var showAPIKeyPrompt: Bool = false
     @State private var keychainErrorText: String? = nil
     
+    @State private var isLoading: Bool = false
+    
     private let keychain = KeychainService()
     private let keychainAccount = "openai_api_key"
     
@@ -30,83 +32,91 @@ struct MainView: View {
     private var canRun: Bool { isTemplateValid && isDetailsValid }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Заполнение документа")
-                .font(.title2.weight(.semibold))
-            
-            HStack(spacing: 16) {
-                DropZoneCard(
-                    title: "Шаблон (DOCX)",
-                    subtitle: "Перетащи сюда файл шаблона",
-                    isValid: isTemplateValid,
-                    path: $templatePath,
-                    onDropURLs: { urls in
-                        // Берем первый файл
-                        if let url = urls.first {
-                            templatePath = url.path
+        ZStack{
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Заполнение документа")
+                    .font(.title2.weight(.semibold))
+                
+                HStack(spacing: 16) {
+                    DropZoneCard(
+                        title: "Шаблон (DOCX)",
+                        subtitle: "Перетащи сюда файл шаблона",
+                        isValid: isTemplateValid,
+                        path: $templatePath,
+                        onDropURLs: { urls in
+                            // Берем первый файл
+                            if let url = urls.first {
+                                templatePath = url.path
+                            }
                         }
-                    }
-                )
-                
-                DropZoneCard(
-                    title: "Реквизиты",
-                    subtitle: "Перетащи сюда файл с реквизитами (pdf/doc/xls/…)",
-                    isValid: isDetailsValid,
-                    path: $detailsPath,
-                    onDropURLs: { urls in
-                        if let url = urls.first {
-                            detailsPath = url.path
+                    )
+                    
+                    DropZoneCard(
+                        title: "Реквизиты",
+                        subtitle: "Перетащи сюда файл с реквизитами (pdf/doc/xls/…)",
+                        isValid: isDetailsValid,
+                        path: $detailsPath,
+                        onDropURLs: { urls in
+                            if let url = urls.first {
+                                detailsPath = url.path
+                            }
                         }
+                    )
+                }
+                
+                Divider()
+                
+                HStack {
+                    Spacer()
+                    
+                    Button {
+                        runFill()
+                    } label: {
+                        Text("Извлечь реквизиты и заполнить шаблон")
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
                     }
-                )
-            }
-            
-            Divider()
-            
-            HStack {
-                Spacer()
-                
-                Button {
-                    runFill()
-                } label: {
-                    Text("Извлечь реквизиты и заполнить шаблон")
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(!canRun || isLoading)
+                    
+                    Spacer()
                 }
-                .keyboardShortcut(.defaultAction)
-                .disabled(!canRun)
                 
-                Spacer()
+                if apiKey == nil || apiKey?.isEmpty == true {
+                    Text("Добавь API ключ (появится окно ввода).")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                if !canRun {
+                    Text("Добавь оба файла: шаблон и реквизиты.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(20)
+            .onAppear {
+                loadAPIKey()
+            }
+            // ✅ Модалка ввода ключа (не уйдёт, пока не сохраним)
+            .sheet(isPresented: $showAPIKeyPrompt) {
+                APIKeyPromptView { enteredKey in
+                    do {
+                        try keychain.saveString(enteredKey, account: keychainAccount)
+                        apiKey = enteredKey
+                        keychainErrorText = nil
+                    } catch {
+                        keychainErrorText = "Не удалось сохранить ключ в Keychain: \(error.localizedDescription)"
+                        // если не сохранили — снова попросим
+                        apiKey = nil
+                        showAPIKeyPrompt = true
+                    }
+                }
             }
             
-            if apiKey == nil || apiKey?.isEmpty == true {
-                Text("Добавь API ключ (появится окно ввода).")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-            if !canRun {
-                Text("Добавь оба файла: шаблон и реквизиты.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(20)
-        .onAppear {
-            loadAPIKey()
-        }
-        // ✅ Модалка ввода ключа (не уйдёт, пока не сохраним)
-        .sheet(isPresented: $showAPIKeyPrompt) {
-            APIKeyPromptView { enteredKey in
-                do {
-                    try keychain.saveString(enteredKey, account: keychainAccount)
-                    apiKey = enteredKey
-                    keychainErrorText = nil
-                } catch {
-                    keychainErrorText = "Не удалось сохранить ключ в Keychain: \(error.localizedDescription)"
-                    // если не сохранили — снова попросим
-                    apiKey = nil
-                    showAPIKeyPrompt = true
-                }
+            
+            if isLoading {
+                AIBlockingOverlay(title: "Обрабатываю…")
+                    .transition(.opacity)
             }
         }
     }
@@ -137,6 +147,9 @@ struct MainView: View {
         let extractor = DocumentTextExtractorService()
         
         Task {
+            await MainActor.run { isLoading = true }
+            defer { Task { @MainActor in isLoading = false } }
+            
             do {
                 let result = try extractor.extract(from: detailsURL)
                 print("Method:", result.method)
