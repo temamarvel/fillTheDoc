@@ -151,3 +151,24 @@ struct AIBlockingOverlay: View {
         .allowsHitTesting(true) // важно: блокируем клики по UI под оверлеем
     }
 }
+
+#Preview {
+    VStack(spacing: 24) {
+        AIProcessingIndicator(size: 28)
+        AIProcessingIndicator(size: 44)
+        AIProcessingIndicator(size: 72)
+
+        Divider().frame(width: 220)
+
+        HStack(spacing: 18) {
+            AIProcessingIndicator(size: 36)
+            Text("AI is working…")
+                .font(.headline)
+        }
+        .padding(16)
+        .background(.thinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+    .padding(24)
+    .frame(width: 420, height: 360)
+}
