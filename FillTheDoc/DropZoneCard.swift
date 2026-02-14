@@ -18,6 +18,7 @@ struct DropZoneCard: View {
     @Binding var path: String
     
     let onDropURLs: ([URL]) -> Void
+    let heightToContent: Bool
     
     @State private var isDropping: Bool = false
     
@@ -52,6 +53,11 @@ struct DropZoneCard: View {
             }
             
             VStack(spacing: 8) {
+                
+                if(!heightToContent){
+                    Spacer()
+                }
+    
                 Image(systemName: iconName)
                     .font(.system(size: 34, weight: .semibold))
                     .symbolRenderingMode(.hierarchical)
@@ -59,6 +65,10 @@ struct DropZoneCard: View {
                 
                 Text(statusText)
                     .font(.callout.weight(.semibold))
+                
+                if(!heightToContent){
+                    Spacer()
+                }
             }
             .foregroundStyle(borderColor)
             .frame(maxWidth: .infinity)              // заполняем ширину
@@ -131,21 +141,24 @@ struct DropZoneCard: View {
                     title: "Шаблон (DOCX)",
                     isValid: false,
                     path: $invalidPath,
-                    onDropURLs: { _ in }
+                    onDropURLs: { _ in },
+                    heightToContent: false
                 )
                 
                 DropZoneCard(
                     title: "Реквизиты",
                     isValid: true,
                     path: $validPath,
-                    onDropURLs: { _ in }
+                    onDropURLs: { _ in },
+                    heightToContent: false
                 )
                 
                 DropZoneCard(
                     title: "Реквизиты",
                     isValid: true,
                     path: $validPath,
-                    onDropURLs: { _ in }
+                    onDropURLs: { _ in },
+                    heightToContent: true
                 )
             }
             .padding(24)

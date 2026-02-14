@@ -29,7 +29,8 @@ struct MainView: View {
                     path: $templatePath,
                     onDropURLs: { urls in
                         if let url = urls.first { templatePath = url.path }
-                    }
+                    },
+                    heightToContent: true
                 )
                 
                 DropZoneCard(
@@ -38,7 +39,8 @@ struct MainView: View {
                     path: $detailsPath,
                     onDropURLs: { urls in
                         if let url = urls.first { detailsPath = url.path }
-                    }
+                    },
+                    heightToContent: false
                 )
             }
             
