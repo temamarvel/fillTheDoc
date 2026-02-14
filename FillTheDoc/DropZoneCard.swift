@@ -13,13 +13,13 @@ import UniformTypeIdentifiers
 
 struct DropZoneCard: View {
     let title: String
-    let subtitle: String
-    
     let isValid: Bool
-    @State private var isDropping: Bool = false
     
     @Binding var path: String
+    
     let onDropURLs: ([URL]) -> Void
+    
+    @State private var isDropping: Bool = false
     
     private var borderColor: Color {
         if isValid { return .green }
@@ -51,30 +51,30 @@ struct DropZoneCard: View {
                 StatusBadge(isValid: isValid)
             }
             
-            Text(subtitle)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            
-            ZStack {
+            VStack(spacing: 8) {
+                Image(systemName: iconName)
+                    .font(.system(size: 34, weight: .semibold))
+                    .symbolRenderingMode(.hierarchical)
+                    .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isValid)
+                
+                Text(statusText)
+                    .font(.callout.weight(.semibold))
+            }
+            .foregroundStyle(borderColor)
+            .frame(maxWidth: .infinity)              // заполняем ширину
+            .padding(.vertical, 18)                  // задаём “комфортную” высоту через паддинг
+            .background {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(fillColor)
-                
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(borderColor.opacity(isDropping ? 1.0 : 0.85),
-                                  style: StrokeStyle(lineWidth: isDropping ? 3 : 2, dash: [8, 6]))
-                
-                VStack(spacing: 8) {
-                    Image(systemName: iconName)
-                        .font(.system(size: 34, weight: .semibold))
-                        .symbolRenderingMode(.hierarchical)
-                        .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isValid)
-                    
-                    Text(statusText)
-                        .font(.callout.weight(.semibold))
-                }
-                .foregroundStyle(borderColor)
             }
-            .frame(height: 160)
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(
+                        borderColor.opacity(isDropping ? 1.0 : 0.85),
+                        style: StrokeStyle(lineWidth: isDropping ? 3 : 2, dash: [8, 6])
+                    )
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous)) // чтобы дроп ловился по форме
             .onDrop(of: [UTType.fileURL], isTargeted: $isDropping) { providers in
                 handleDrop(providers: providers)
             }
@@ -119,7 +119,7 @@ struct DropZoneCard: View {
     }
 }
 
-#Preview("DropZoneCard – states") {
+#Preview {
     struct PreviewWrapper: View {
         @State private var validPath: String = "/Users/artem/Documents/template.docx"
         @State private var invalidPath: String = ""
@@ -129,7 +129,6 @@ struct DropZoneCard: View {
                 
                 DropZoneCard(
                     title: "Шаблон (DOCX)",
-                    subtitle: "Перетащи сюда файл шаблона",
                     isValid: false,
                     path: $invalidPath,
                     onDropURLs: { _ in }
@@ -137,22 +136,20 @@ struct DropZoneCard: View {
                 
                 DropZoneCard(
                     title: "Реквизиты",
-                    subtitle: "Файл с реквизитами клиента",
                     isValid: true,
                     path: $validPath,
                     onDropURLs: { _ in }
                 )
                 
                 DropZoneCard(
-                    title: "Dragging state",
-                    subtitle: "Имитируем drag-over",
-                    isValid: false,
-                    path: $invalidPath,
+                    title: "Реквизиты",
+                    isValid: true,
+                    path: $validPath,
                     onDropURLs: { _ in }
                 )
             }
             .padding(24)
-            .frame(width: 600)
+            .frame(width: 500, height: 1200, alignment: .top)
         }
     }
     

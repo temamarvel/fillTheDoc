@@ -18,14 +18,13 @@ struct MainView: View {
     private var canRun: Bool { isTemplateValid && isDetailsValid && apiKeyStore.hasKey }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(spacing: 16) {
             Text("Заполнение документа")
                 .font(.title2.weight(.semibold))
             
-            HStack(spacing: 16) {
+            VStack(spacing: 16) {
                 DropZoneCard(
                     title: "Шаблон (DOCX)",
-                    subtitle: "Перетащи сюда файл шаблона",
                     isValid: isTemplateValid,
                     path: $templatePath,
                     onDropURLs: { urls in
@@ -34,8 +33,7 @@ struct MainView: View {
                 )
                 
                 DropZoneCard(
-                    title: "Реквизиты",
-                    subtitle: "Перетащи сюда файл с реквизитами (pdf/doc/xls/…)",
+                    title: "Реквизиты (DOC, DOCX, PDF, XLS, XLSX)",
                     isValid: isDetailsValid,
                     path: $detailsPath,
                     onDropURLs: { urls in
@@ -143,4 +141,8 @@ struct MainView: View {
         let exists = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
         return exists && !isDir.boolValue
     }
+}
+
+#Preview {
+    MainView()
 }
