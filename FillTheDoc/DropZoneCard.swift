@@ -1,170 +1,244 @@
-//
-//  DropZoneCard.swift
-//  FillTheDoc
-//
-//  Created by Артем Денисов on 09.02.2026.
-//
-
 import SwiftUI
 import UniformTypeIdentifiers
 
-
-// MARK: - Drop zone
-
-struct DropZoneCard: View {
+/// Generic DropZone карточка с опциональным "нижним" контентом (bottom).
+/// - Поддерживает drag&drop файлов (UTType.fileURL)
+/// - Показывает path (как текст) и валидность (иконка/цвет)
+/// - Может "расти по контенту" (heightToContent) или быть фиксированной по высоте
+struct DropZoneCard<Bottom: View>: View {
     let title: String
-    let isValid: Bool
+    var subtitle: String? = nil
     
+    let isValid: Bool
     @Binding var path: String
     
+    /// Если true — карточка не фиксирует высоту и растёт под контентом (включая bottom).
+    var heightToContent: Bool = true
+    
+    /// Callback: что делать с за-дропанными URL.
     let onDropURLs: ([URL]) -> Void
-    let heightToContent: Bool
     
-    @State private var isDropping: Bool = false
+    /// Опциональный нижний контент (например: ProgressView, ошибки, превью текста и т.п.)
+    private let bottom: Bottom
     
-    private var borderColor: Color {
-        if isValid { return .green }
-        return .red
-    }
+    // UI state
+    @State private var isTargeted: Bool = false
     
-    private var fillColor: Color {
-        // лёгкий фон, чтобы зона читалась
-        if isDropping { return Color.primary.opacity(0.06) }
-        return Color.primary.opacity(0.03)
-    }
+    // MARK: - Initializers
     
-    private var iconName: String {
-        isValid ? "checkmark.circle.fill" : "doc.badge.plus"
-    }
-    
-    private var statusText: String {
-        isValid ? "Файл добавлен" : "Перетащи файл сюда"
+    init(
+        title: String,
+        subtitle: String? = nil,
+        isValid: Bool,
+        path: Binding<String>,
+        onDropURLs: @escaping ([URL]) -> Void,
+        heightToContent: Bool = true,
+        fixedHeight: CGFloat = 120,
+        @ViewBuilder bottom: () -> Bottom
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.isValid = isValid
+        self._path = path
+        self.onDropURLs = onDropURLs
+        self.heightToContent = heightToContent
+        self.bottom = bottom()
     }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
+            header
+            
+            dropArea
+            
+            Divider().opacity(hasBottomContent ? 0.6 : 0.0)
+                .frame(height: hasBottomContent ? nil : 0)
+            
+            if hasBottomContent {
+                bottom
+            }
+        }
+        .padding(12)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(borderColor, lineWidth: 1)
+        )
+        .animation(.easeInOut(duration: 0.15), value: isTargeted)
+    }
+    
+    // MARK: - Subviews
+    
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.headline)
                 
-                Spacer()
-                
-                StatusBadge(isValid: isValid)
-            }
-            
-            VStack(spacing: 8) {
-                
-                if(!heightToContent){
-                    Spacer()
-                }
-    
-                Image(systemName: iconName)
-                    .font(.system(size: 34, weight: .semibold))
-                    .symbolRenderingMode(.hierarchical)
-                    .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isValid)
-                
-                Text(statusText)
-                    .font(.callout.weight(.semibold))
-                
-                if(!heightToContent){
-                    Spacer()
+                if let subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
             }
-            .foregroundStyle(borderColor)
-            .frame(maxWidth: .infinity)              // заполняем ширину
-            .padding(.vertical, 18)                  // задаём “комфортную” высоту через паддинг
-            .background {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(fillColor)
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(
-                        borderColor.opacity(isDropping ? 1.0 : 0.85),
-                        style: StrokeStyle(lineWidth: isDropping ? 3 : 2, dash: [8, 6])
-                    )
-            }
-            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous)) // чтобы дроп ловился по форме
-            .onDrop(of: [UTType.fileURL], isTargeted: $isDropping) { providers in
-                handleDrop(providers: providers)
-            }
             
-            TextField("Путь к файлу", text: $path)
-                .textFieldStyle(.roundedBorder)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(borderColor.opacity(0.75), lineWidth: 1)
-                )
-                .help("Можно вставить/отредактировать путь вручную")
+            Spacer()
+            
+            Image(systemName: isValid ? "checkmark.circle.fill" : "circle")
+                .foregroundStyle(isValid ? .green : .secondary)
+                .imageScale(.large)
+                .accessibilityLabel(isValid ? "Valid" : "Not selected")
         }
-        .padding(14)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+    
+    private var dropArea: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Image(systemName: isValid ? "doc.badge.checkmark" : "doc")
+                    .imageScale(.large)
+                    .foregroundStyle(isValid ? .green : .secondary)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(isValid ? "Файл выбран" : "Перетащи файл сюда")
+                        .font(.subheadline.weight(.semibold))
+                    Text(pathPreview)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .truncationMode(.middle)
+                }
+                
+                Spacer()
+            }
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(isTargeted ? Color.primary.opacity(0.06) : Color.primary.opacity(0.03))
+            )
+        }
+        .onDrop(of: [UTType.fileURL], isTargeted: $isTargeted, perform: handleDrop(providers:))
+    }
+    
+    // MARK: - Helpers
+    
+    private var borderColor: Color {
+        if isTargeted { return .accentColor.opacity(0.7) }
+        if isValid { return .green.opacity(0.5) }
+        return .primary.opacity(0.10)
+    }
+    
+    private var pathPreview: String {
+        let trimmed = path.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "Путь не выбран" : trimmed
+    }
+    
+    private var hasBottomContent: Bool {
+        // Для EmptyView мы не хотим показывать Divider и лишнее пространство.
+        Bottom.self != EmptyView.self
     }
     
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
-        let fileProviders = providers.filter {
+        guard let provider = providers.first(where: {
             $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier)
+        }) else {
+            return false
         }
-        guard !fileProviders.isEmpty else { return false }
         
-        for provider in fileProviders {
-            provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
-                let url: URL?
-                if let u = item as? URL {
-                    url = u
-                } else if let data = item as? Data {
-                    url = URL(dataRepresentation: data, relativeTo: nil)
-                } else {
-                    url = nil
-                }
-                
-                guard let url else { return }
-                
-                DispatchQueue.main.async {
-                    onDropURLs([url])
-                }
+        provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
+            guard let data = item as? Data,
+                  let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
+            
+            DispatchQueue.main.async {
+                onDropURLs([url])
             }
         }
         return true
     }
 }
 
-#Preview {
-    struct PreviewWrapper: View {
-        @State private var validPath: String = "/Users/artem/Documents/template.docx"
-        @State private var invalidPath: String = ""
-        
-        var body: some View {
-            VStack(spacing: 20) {
-                
-                DropZoneCard(
-                    title: "Шаблон (DOCX)",
-                    isValid: false,
-                    path: $invalidPath,
-                    onDropURLs: { _ in },
-                    heightToContent: false
-                )
-                
-                DropZoneCard(
-                    title: "Реквизиты",
-                    isValid: true,
-                    path: $validPath,
-                    onDropURLs: { _ in },
-                    heightToContent: false
-                )
-                
-                DropZoneCard(
-                    title: "Реквизиты",
-                    isValid: true,
-                    path: $validPath,
-                    onDropURLs: { _ in },
-                    heightToContent: true
-                )
-            }
-            .padding(24)
-            .frame(width: 500, height: 1200, alignment: .top)
+// MARK: - Convenience init for “no bottom content”
+extension DropZoneCard where Bottom == EmptyView {
+    init(
+        title: String,
+        subtitle: String? = nil,
+        isValid: Bool,
+        path: Binding<String>,
+        onDropURLs: @escaping ([URL]) -> Void,
+        heightToContent: Bool = true,
+        fixedHeight: CGFloat = 120
+    ) {
+        self.init(
+            title: title,
+            subtitle: subtitle,
+            isValid: isValid,
+            path: path,
+            onDropURLs: onDropURLs,
+            heightToContent: heightToContent,
+            fixedHeight: fixedHeight
+        ) {
+            EmptyView()
         }
     }
+}
+
+private struct DropZoneCardPreviewContainer: View {
+    @State private var emptyPath: String = ""
+    @State private var validPath: String = "/Users/artem/Documents/template.docx"
+    @State private var loadingPath: String = "/Users/artem/Documents/details.pdf"
     
-    return PreviewWrapper()
+    var body: some View {
+        VStack(spacing: 24) {
+            
+            // 1. Пустое состояние
+            DropZoneCard(
+                title: "Шаблон (DOCX)",
+                subtitle: "Перетащи сюда файл шаблона",
+                isValid: false,
+                path: $emptyPath,
+                onDropURLs: { _ in }
+            )
+            
+            // 2. Валидное состояние
+            DropZoneCard(
+                title: "Реквизиты",
+                subtitle: "Файл с данными клиента",
+                isValid: true,
+                path: $validPath,
+                onDropURLs: { _ in }
+            )
+            
+            // 3. С нижним контентом (например, загрузка)
+            DropZoneCard(
+                title: "Обработка",
+                subtitle: "Извлечение данных из документа",
+                isValid: true,
+                path: $loadingPath,
+                onDropURLs: { _ in }
+            ) {
+                VStack(spacing: 12) {
+                    HStack(spacing: 12) {
+                        ProgressView()
+                            .controlSize(.small)
+                        
+                        Text("Извлечение текста через textutil...")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        
+                        Spacer()
+                    }
+                    .padding(.top, 4)
+                    
+                    RoundedRectangle(cornerRadius: 4)
+                        .background(.yellow)
+                        .frame(height: 30)
+                }
+            }
+        }
+    }
+}
+
+#Preview("DropZoneCard States") {
+    DropZoneCardPreviewContainer()
+        .frame(width: 520)
+        .padding()
 }
