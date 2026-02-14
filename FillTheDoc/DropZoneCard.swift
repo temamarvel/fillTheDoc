@@ -85,7 +85,7 @@ struct DropZoneCard<Bottom: View>: View {
             Spacer()
             
             Image(systemName: isValid ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(isValid ? .green : .secondary)
+                .foregroundStyle(isValid ? .green : .red)
                 .imageScale(.large)
                 .accessibilityLabel(isValid ? "Valid" : "Not selected")
         }
@@ -96,7 +96,7 @@ struct DropZoneCard<Bottom: View>: View {
             HStack(spacing: 10) {
                 Image(systemName: isValid ? "doc.badge.checkmark" : "doc")
                     .imageScale(.large)
-                    .foregroundStyle(isValid ? .green : .secondary)
+                    .foregroundStyle(isValid ? .green : .red)
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(isValid ? "Файл выбран" : "Перетащи файл сюда")
@@ -122,9 +122,9 @@ struct DropZoneCard<Bottom: View>: View {
     // MARK: - Helpers
     
     private var borderColor: Color {
-        if isTargeted { return .accentColor.opacity(0.7) }
+        if isTargeted { return .yellow.opacity(0.7) }
         if isValid { return .green.opacity(0.5) }
-        return .primary.opacity(0.10)
+        return .red.opacity(0.5)
     }
     
     private var pathPreview: String {
