@@ -7,6 +7,8 @@ struct MainView: View {
     @State private var templatePath: String = ""
     @State private var detailsPath: String = ""
     
+    @State private var detailsText: String? = nil
+    
     @State private var isLoading: Bool = false
     
     private var templateURL: URL? { url(from: templatePath) }
@@ -39,9 +41,16 @@ struct MainView: View {
                     path: $detailsPath,
                     onDropURLs: { urls in
                         if let url = urls.first { detailsPath = url.path }
+                        extractDetails()
                     },
                     heightToContent: false
-                )
+                ){
+                    if let text = detailsText {
+                        Text(text)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
             }
             
             Divider()
@@ -94,6 +103,50 @@ struct MainView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: isLoading)
+    }
+    
+    private func extractDetails(){
+        guard let detailsURL else { return }
+        
+        let extractor = DocumentTextExtractorService()
+        
+        Task {
+            await MainActor.run { isLoading = true }
+            defer { Task { @MainActor in isLoading = false } }
+            
+            do {
+                let result = try extractor.extract(from: detailsURL)
+                
+                // пример: реальный клиент
+                // let client = OpenAIClient(apiKey: apiKeyStore.apiKey ?? "", model: "gpt-4o-mini")
+                // let (json, status) = try await client.request(
+                //     system: "Extract requisites and return ONLY a JSON object.",
+                //     user: result.text
+                // )
+                
+                print("Method:", result.method)
+                print("Chars:", result.diagnostics.producedChars)
+                
+                // симуляция
+                try await Task.sleep(nanoseconds: 2_200_000_000)
+                print("OK")
+                
+                let fakeJSON = """
+            {
+                "company": "ООО Ромашка",
+                "director": "Иванов Иван Иванович",
+                "form": "ООО"
+            }
+            """
+                
+                print("JSON:", fakeJSON)
+                detailsText = fakeJSON
+                
+            } catch {
+                print("Extraction failed:", error)
+            }
+        }
+        
     }
     
     private func runFill() {
