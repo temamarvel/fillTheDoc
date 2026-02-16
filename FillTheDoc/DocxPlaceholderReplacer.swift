@@ -7,10 +7,10 @@
 
 import Foundation
 import ZIPFoundation
-
+public import Combine
 // MARK: - Public
 
-public struct DocxPlaceholderReplacer: Sendable {
+public final class DocxPlaceholderReplacer: ObservableObject, Sendable {
     
     // MARK: Options / Report
     

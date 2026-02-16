@@ -10,11 +10,13 @@ import SwiftUI
 @main
 struct FillTheDocApp: App {
     @StateObject private var apiKeyStore = APIKeyStore()
+    @StateObject private var replacer = DocxPlaceholderReplacer()
     
     var body: some Scene {
         WindowGroup {
             MainView()
                 .environmentObject(apiKeyStore)
+                .environmentObject(replacer)
                 .onAppear {
                     apiKeyStore.load()
                 }

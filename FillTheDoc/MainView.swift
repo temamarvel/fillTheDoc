@@ -3,6 +3,7 @@ import OpenAIClient
 
 struct MainView: View {
     @EnvironmentObject private var apiKeyStore: APIKeyStore
+    @EnvironmentObject private var replacer: DocxPlaceholderReplacer
     
     @State private var templatePath: String = ""
     @State private var detailsPath: String = ""
@@ -149,39 +150,41 @@ struct MainView: View {
         
     }
     
+    func makeOutputURL(from templateURL: URL) -> URL {
+        let directory = templateURL.deletingLastPathComponent()
+        let baseName = templateURL.deletingPathExtension().lastPathComponent
+        let newName = baseName + "_out.docx"
+        return directory.appendingPathComponent(newName)
+    }
+    
     private func runFill() {
-        guard apiKeyStore.hasKey else {
-            apiKeyStore.isPromptPresented = true
-            return
-        }
-        guard let detailsURL else { return }
         
-        let extractor = DocumentTextExtractorService()
-        
-        Task {
-            await MainActor.run { isLoading = true }
-            defer { Task { @MainActor in isLoading = false } }
+            isLoading = true
+            defer { isLoading = false  }
             
             do {
-                let result = try extractor.extract(from: detailsURL)
+                let values: [String: String] = [
+                    "company": "ООО «Ромашка»",
+                    "director": "Иванов Иван Иванович",
+                    "inn": "7701234567"
+                ]
                 
-                // пример: реальный клиент
-                // let client = OpenAIClient(apiKey: apiKeyStore.apiKey ?? "", model: "gpt-4o-mini")
-                // let (json, status) = try await client.request(
-                //     system: "Extract requisites and return ONLY a JSON object.",
-                //     user: result.text
-                // )
+                let outputURL = makeOutputURL(from: templateURL!)
                 
-                print("Method:", result.method)
-                print("Chars:", result.diagnostics.producedChars)
+                //TODO: fix permitions
+                let report = try replacer.fill(
+                    template: templateURL!,
+                    output: outputURL,
+                    values: values
+                )
                 
-                // симуляция
-                try await Task.sleep(nanoseconds: 2_200_000_000)
-                print("OK")
+                print("missing", report.missingKeys)
+                print("found", report.foundKeys)
+                print("REPLACE OK")
             } catch {
-                print("Extraction failed:", error)
+                print("Replacement failed:", error)
             }
-        }
+        
     }
     
     private func url(from path: String) -> URL? {
