@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		3B7223592F3E5F1000E17F90 /* OpenAIClient in Frameworks */ = {isa = PBXBuildFile; productRef = 3B7223582F3E5F1000E17F90 /* OpenAIClient */; };
 		3B7223902F3FA87600E17F90 /* Shimmer in Frameworks */ = {isa = PBXBuildFile; productRef = 3B72238F2F3FA87600E17F90 /* Shimmer */; };
+		3B72239C2F43B1AD00E17F90 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 3B72239B2F43B1AD00E17F90 /* ZIPFoundation */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 			files = (
 				3B7223902F3FA87600E17F90 /* Shimmer in Frameworks */,
 				3B7223592F3E5F1000E17F90 /* OpenAIClient in Frameworks */,
+				3B72239C2F43B1AD00E17F90 /* ZIPFoundation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -74,6 +76,7 @@
 			packageProductDependencies = (
 				3B7223582F3E5F1000E17F90 /* OpenAIClient */,
 				3B72238F2F3FA87600E17F90 /* Shimmer */,
+				3B72239B2F43B1AD00E17F90 /* ZIPFoundation */,
 			);
 			productName = FillTheDoc;
 			productReference = 3B12811B2F39C4BE003B76B1 /* FillTheDoc.app */;
@@ -106,6 +109,7 @@
 			packageReferences = (
 				3B7223572F3E5F1000E17F90 /* XCRemoteSwiftPackageReference "OpenAIClient" */,
 				3B72238E2F3FA87600E17F90 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */,
+				3B72239A2F43B1AD00E17F90 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3B12811C2F39C4BE003B76B1 /* Products */;
@@ -386,6 +390,14 @@
 				minimumVersion = 1.5.1;
 			};
 		};
+		3B72239A2F43B1AD00E17F90 /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/weichsel/ZIPFoundation.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.20;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -398,6 +410,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3B72238E2F3FA87600E17F90 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */;
 			productName = Shimmer;
+		};
+		3B72239B2F43B1AD00E17F90 /* ZIPFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3B72239A2F43B1AD00E17F90 /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
+			productName = ZIPFoundation;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
