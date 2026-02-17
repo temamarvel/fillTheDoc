@@ -196,7 +196,6 @@ struct MainView: View {
                 
                 let tempOutURL = makeTempOutputURL(from: templateURL!)
                 
-                //TODO: fix permitions
                 let report = try replacer.fill(
                     template: templateURL!,
                     output: tempOutURL,

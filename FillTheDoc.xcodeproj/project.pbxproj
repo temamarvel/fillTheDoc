@@ -10,6 +10,7 @@
 		3B7223592F3E5F1000E17F90 /* OpenAIClient in Frameworks */ = {isa = PBXBuildFile; productRef = 3B7223582F3E5F1000E17F90 /* OpenAIClient */; };
 		3B7223902F3FA87600E17F90 /* Shimmer in Frameworks */ = {isa = PBXBuildFile; productRef = 3B72238F2F3FA87600E17F90 /* Shimmer */; };
 		3B72239C2F43B1AD00E17F90 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 3B72239B2F43B1AD00E17F90 /* ZIPFoundation */; };
+		3B7223A12F45037F00E17F90 /* DaDataAPIClient in Frameworks */ = {isa = PBXBuildFile; productRef = 3B7223A02F45037F00E17F90 /* DaDataAPIClient */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 				3B7223902F3FA87600E17F90 /* Shimmer in Frameworks */,
 				3B7223592F3E5F1000E17F90 /* OpenAIClient in Frameworks */,
 				3B72239C2F43B1AD00E17F90 /* ZIPFoundation in Frameworks */,
+				3B7223A12F45037F00E17F90 /* DaDataAPIClient in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -77,6 +79,7 @@
 				3B7223582F3E5F1000E17F90 /* OpenAIClient */,
 				3B72238F2F3FA87600E17F90 /* Shimmer */,
 				3B72239B2F43B1AD00E17F90 /* ZIPFoundation */,
+				3B7223A02F45037F00E17F90 /* DaDataAPIClient */,
 			);
 			productName = FillTheDoc;
 			productReference = 3B12811B2F39C4BE003B76B1 /* FillTheDoc.app */;
@@ -110,6 +113,7 @@
 				3B7223572F3E5F1000E17F90 /* XCRemoteSwiftPackageReference "OpenAIClient" */,
 				3B72238E2F3FA87600E17F90 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */,
 				3B72239A2F43B1AD00E17F90 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
+				3B72239F2F45037F00E17F90 /* XCRemoteSwiftPackageReference "DaDataAPIClient" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3B12811C2F39C4BE003B76B1 /* Products */;
@@ -400,6 +404,14 @@
 				minimumVersion = 0.9.20;
 			};
 		};
+		3B72239F2F45037F00E17F90 /* XCRemoteSwiftPackageReference "DaDataAPIClient" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/temamarvel/DaDataAPIClient.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -417,6 +429,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3B72239A2F43B1AD00E17F90 /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
 			productName = ZIPFoundation;
+		};
+		3B7223A02F45037F00E17F90 /* DaDataAPIClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3B72239F2F45037F00E17F90 /* XCRemoteSwiftPackageReference "DaDataAPIClient" */;
+			productName = DaDataAPIClient;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

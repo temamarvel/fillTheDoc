@@ -1,6 +1,15 @@
 {
-  "originHash" : "8118a4d44eb5a451f106fdcd4b952dbf9c2e6b05fdc64d7eb2382ea0ac22419d",
+  "originHash" : "6b25385f129b0d65d6e9cf5a1ef515108d8f67924feb4f6cc5375ce6ec25c223",
   "pins" : [
+    {
+      "identity" : "dadataapiclient",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/temamarvel/DaDataAPIClient.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "65d7de69348d4b6fea536dc980301e201d267ce4"
+      }
+    },
     {
       "identity" : "openaiclient",
       "kind" : "remoteSourceControl",
