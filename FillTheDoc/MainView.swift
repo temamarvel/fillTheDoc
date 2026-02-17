@@ -204,7 +204,7 @@ struct MainView: View {
                 )
                 
                 exportDocument = try DocxFileDocument(fileURL: tempOutURL)
-                exportDefaultFilename = tempOutURL.deletingPathExtension().lastPathComponent
+                exportDefaultFilename = templateURL!.deletingPathExtension().lastPathComponent
                 
                 // 4) показываем SavePanel
                 showExporter = true
