@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import OpenAIClient
 
 struct MainView: View {
@@ -11,6 +12,10 @@ struct MainView: View {
     @State private var detailsText: String? = nil
     
     @State private var isLoading: Bool = false
+    
+    @State private var showExporter: Bool = false
+    @State private var exportDocument: DocxFileDocument?
+    @State private var exportDefaultFilename: String = "output"
     
     private var templateURL: URL? { url(from: templatePath) }
     private var detailsURL: URL? { url(from: detailsPath) }
@@ -91,6 +96,26 @@ struct MainView: View {
             }
         }
         .padding(20)
+        .fileExporter(
+            isPresented: $showExporter,
+            document: exportDocument,
+            contentType: UTType(filenameExtension: "docx") ?? .data,
+            defaultFilename: exportDefaultFilename
+        ) { result in
+            switch result {
+                case .success:
+                    // Пользователь сохранил файл куда выбрал.
+                    // Можно показать тост/алерт, сбросить состояние и т.п.
+                    //errorText = nil
+                    print("NEW DOC SAVED")
+                //case .failure(let error):
+                case .failure:
+                    // Отмена пользователем приходит как ошибка? Обычно нет, но иногда может.
+                    print("NEW DOC! Не удалось сохранить файл")
+            }
+            // cleanup
+            exportDocument = nil
+        }
         .sheet(isPresented: $apiKeyStore.isPromptPresented) {
             APIKeyPromptView { enteredKey in
                 apiKeyStore.save(enteredKey)
@@ -119,7 +144,7 @@ struct MainView: View {
                 let result = try extractor.extract(from: detailsURL)
                 
                 // пример: реальный клиент
-                // let client = OpenAIClient(apiKey: apiKeyStore.apiKey ?? "", model: "gpt-4o-mini")
+                // let client = OpenAIClient(apiKey: apiKeyStore.apiKey ?? "", model: "-4o-mini")
                 // let (json, status) = try await client.request(
                 //     system: "Extract requisites and return ONLY a JSON object.",
                 //     user: result.text
@@ -150,11 +175,11 @@ struct MainView: View {
         
     }
     
-    func makeOutputURL(from templateURL: URL) -> URL {
-        let directory = templateURL.deletingLastPathComponent()
-        let baseName = templateURL.deletingPathExtension().lastPathComponent
-        let newName = baseName + "_out.docx"
-        return directory.appendingPathComponent(newName)
+    private func makeTempOutputURL(from templateURL: URL) -> URL {
+        let base = templateURL.deletingPathExtension().lastPathComponent
+        // чтобы не перезаписывать при повторных запусках — добавим UUID
+        let name = "\(base)_out_\(UUID().uuidString).docx"
+        return FileManager.default.temporaryDirectory.appendingPathComponent(name)
     }
     
     private func runFill() {
@@ -169,14 +194,20 @@ struct MainView: View {
                     "inn": "7701234567"
                 ]
                 
-                let outputURL = makeOutputURL(from: templateURL!)
+                let tempOutURL = makeTempOutputURL(from: templateURL!)
                 
                 //TODO: fix permitions
                 let report = try replacer.fill(
                     template: templateURL!,
-                    output: outputURL,
+                    output: tempOutURL,
                     values: values
                 )
+                
+                exportDocument = try DocxFileDocument(fileURL: tempOutURL)
+                exportDefaultFilename = tempOutURL.deletingPathExtension().lastPathComponent
+                
+                // 4) показываем SavePanel
+                showExporter = true
                 
                 print("missing", report.missingKeys)
                 print("found", report.foundKeys)
