@@ -194,6 +194,8 @@ struct MainView: View {
                     "inn": "7701234567"
                 ]
                 
+                print(Bundle.main.infoDictionary?["DADATA_TOKEN"] as? String ?? "N_T")
+                
                 let tempOutURL = makeTempOutputURL(from: templateURL!)
                 
                 let report = try replacer.fill(
