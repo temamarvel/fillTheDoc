@@ -1,4 +1,5 @@
 import SwiftUI
+import DaDataAPIClient
 import UniformTypeIdentifiers
 import OpenAIClient
 
@@ -65,7 +66,9 @@ struct MainView: View {
                 Spacer()
                 
                 Button {
-                    runFill()
+                    Task{
+                        await runFill()
+                    }
                 } label: {
                     Text("Извлечь реквизиты и заполнить шаблон")
                         .padding(.horizontal, 12)
@@ -182,7 +185,7 @@ struct MainView: View {
         return FileManager.default.temporaryDirectory.appendingPathComponent(name)
     }
     
-    private func runFill() {
+    private func runFill() async {
         
             isLoading = true
             defer { isLoading = false  }
@@ -195,6 +198,20 @@ struct MainView: View {
                 ]
                 
                 print(Bundle.main.infoDictionary?["DADATA_TOKEN"] as? String ?? "N_T")
+                
+                let token = Bundle.main.infoDictionary?["DADATA_TOKEN"] as? String ?? "N_T"
+                
+                let client = DaDataClient(
+                    configuration: .init(token: token)
+                )
+                
+                let suggestion = try await client.findPartyFirst(innOrOgrn: "6900026362")
+                
+                let party = suggestion?.data
+                print(party)
+                print(party?.name?.fullWithOpf)
+                print(party?.management?.name)
+                print(party?.state?.status)
                 
                 let tempOutURL = makeTempOutputURL(from: templateURL!)
                 
