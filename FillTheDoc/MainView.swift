@@ -25,7 +25,7 @@ struct MainView: View {
     private var isDetailsValid: Bool { isExistingFile(detailsURL) }
     
     private var canRun: Bool { isTemplateValid && isDetailsValid && apiKeyStore.hasKey }
-    
+
     var body: some View {
         VStack(spacing: 16) {
             Text("Заполнение документа")
@@ -144,32 +144,36 @@ struct MainView: View {
             defer { Task { @MainActor in isLoading = false } }
             
             do {
-                let result = try extractor.extract(from: detailsURL)
+                let extractedResult = try extractor.extract(from: detailsURL)
                 
-                // пример: реальный клиент
-                // let client = OpenAIClient(apiKey: apiKeyStore.apiKey ?? "", model: "-4o-mini")
-                // let (json, status) = try await client.request(
-                //     system: "Extract requisites and return ONLY a JSON object.",
-                //     user: result.text
-                // )
-                
-                print("Method:", result.method)
-                print("Chars:", result.diagnostics.producedChars)
+                print("Method:", extractedResult.method)
+                print("Chars:", extractedResult.diagnostics.producedChars)
                 
                 // симуляция
-                try await Task.sleep(nanoseconds: 2_200_000_000)
-                print("OK")
+//                try await Task.sleep(nanoseconds: 2_200_000_000)
+//                print("OK")
+//                
+//                let fakeJSON = """
+//            {
+//                "company": "ООО Ромашка",
+//                "director": "Иванов Иван Иванович",
+//                "form": "ООО"
+//            }
+//            """
+                let openAIClient = OpenAIClient(apiKey: apiKeyStore.apiKey ?? "", model: "gpt-4o-mini")
                 
-                let fakeJSON = """
-            {
-                "company": "ООО Ромашка",
-                "director": "Иванов Иван Иванович",
-                "form": "ООО"
-            }
-            """
+                let system = PromptBuilder.system(for: Requisites.self)
+                let user = PromptBuilder.user(sourceText: extractedResult.text)
                 
-                print("JSON:", fakeJSON)
-                detailsText = fakeJSON
+                let (reqs, status) = try await openAIClient.request(
+                    system: system,
+                    user: user,
+                    as: Requisites.self
+                )
+                
+                let dtoText = reqs.toMultilineString()
+                print("DTO:", dtoText)
+                detailsText = dtoText
                 
             } catch {
                 print("Extraction failed:", error)
