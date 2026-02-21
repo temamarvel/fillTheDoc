@@ -11,6 +11,7 @@ struct MainView: View {
     @State private var detailsPath: String = ""
     
     @State private var detailsText: String? = nil
+    @State private var details: Requisites? = nil
     
     @State private var isLoading: Bool = false
     
@@ -52,10 +53,20 @@ struct MainView: View {
                     },
                     heightToContent: false
                 ){
-                    if let text = detailsText {
-                        Text(text)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+//                    if let text = detailsText {
+//                        Text(text)
+//                            .font(.caption)
+//                            .foregroundColor(.secondary)
+//                    }
+                    
+                    if let details = details {
+                        ExtractedDTOFormView(
+                            dto: details,
+                            metadata: Requisites.fieldMetadata
+                        ) { updated in
+                            // updated — уже struct Requisites
+                            self.details = updated
+                        }
                     }
                 }
             }
@@ -165,13 +176,18 @@ struct MainView: View {
                 let system = PromptBuilder.system(for: Requisites.self)
                 let user = PromptBuilder.user(sourceText: extractedResult.text)
                 
-                let (reqs, status) = try await openAIClient.request(
-                    system: system,
-                    user: user,
-                    as: Requisites.self
-                )
+//                let (reqs, status) = try await openAIClient.request(
+//                    system: system,
+//                    user: user,
+//                    as: Requisites.self
+//                )
+                
+                // симуляция
+                try await Task.sleep(nanoseconds: 2_200_000_000)
+                let reqs = Requisites(companyName: "Тест компания", legalForm: "ТЕСТ_ЗАО", ceoFullName: "Тест Тестович Тестов", ceoShortenName: "Тестов Т. Т.", ogrn: "1187746707280", inn: "9731007287", kpp: "773101001", email: "test_test@test.com")
                 
                 let dtoText = reqs.toMultilineString()
+                details = reqs
                 print("DTO:", dtoText)
                 detailsText = dtoText
                 
