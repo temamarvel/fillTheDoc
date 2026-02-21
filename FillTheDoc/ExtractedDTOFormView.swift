@@ -77,3 +77,31 @@ struct ExtractedDTOFormView<T: LLMExtractable>: View {
         )
     }
 }
+
+#Preview("Interactive") {
+    PreviewWrapper()
+}
+
+private struct PreviewWrapper: View {
+    @State private var requisites = Requisites(
+        companyName: "ООО «Ромашка»",
+        legalForm: "ООО",
+        ceoFullName: "Иванов Иван Иванович",
+        ceoShortenName: "Иванов И.И.",
+        ogrn: "1234567890123",
+        inn: "7701234567",
+        kpp: "770101001",
+        email: "info@romashka.ru"
+    )
+    
+    var body: some View {
+        ExtractedDTOFormView(
+            dto: requisites,
+            metadata: Requisites.fieldMetadata
+        ) { updated in
+            requisites = updated
+        }
+        .frame(width: 600, height: 700)
+        .padding()
+    }
+}
