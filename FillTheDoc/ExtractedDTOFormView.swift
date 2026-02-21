@@ -23,24 +23,26 @@ struct ExtractedDTOFormView<T: LLMExtractable>: View {
     }
 
     var body: some View {
-        Form {
+        List {
             ForEach(model.keysInOrder(), id: \.self) { key in
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(model.title(for: key))
-                        .font(.subheadline.weight(.medium))
+//                    Text(model.title(for: key))
+//                        .font(.subheadline.weight(.medium))
 
-                    TextField(model.placeholder(for: key), text: binding(for: key))
-                        .textFieldStyle(.roundedBorder)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .strokeBorder(model.error(for: key) == nil ? .clear : .red.opacity(0.8), lineWidth: 1)
-                        )
+                    TextField("place", text: binding(for: "text"))/*.overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(.red))*/
+                    
+//                    TextField(model.placeholder(for: key), text: binding(for: key))
+//                        .textFieldStyle(.roundedBorder)
+//                        .overlay(
+//                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+//                                .strokeBorder(model.error(for: key) == nil ? .clear : .red.opacity(0.8), lineWidth: 1)
+//                        )
 
-                    if let err = model.error(for: key), !err.isEmpty {
-                        Text(err)
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                    }
+//                    if let err = model.error(for: key), !err.isEmpty {
+//                        Text(err)
+//                            .font(.caption)
+//                            .foregroundStyle(.red)
+//                    }
                 }
                 .padding(.vertical, 4)
             }
