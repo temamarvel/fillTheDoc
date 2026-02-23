@@ -7,19 +7,22 @@
 
 
 import SwiftUI
+import DaDataAPIClient
 
 struct ExtractedDTOFormView<T: LLMExtractable>: View {
 
     @StateObject private var model: EditableDTO<T>
 
     let onApply: (T) -> Void
+    let validate: () async throws -> PartyValidationReport?
 
     @State private var showErrorAlert = false
     @State private var errorText = ""
 
-    init(dto: T, metadata: [String: FieldMetadata], onApply: @escaping (T) -> Void) {
+    init(dto: T, metadata: [String: FieldMetadata], onApply: @escaping (T) -> Void, validate: @escaping () async throws -> PartyValidationReport?) {
         _model = StateObject(wrappedValue: EditableDTO(dto: dto, metadata: metadata))
         self.onApply = onApply
+        self.validate = validate
     }
 
     var body: some View {
@@ -49,7 +52,7 @@ struct ExtractedDTOFormView<T: LLMExtractable>: View {
 
             HStack {
                 Spacer()
-
+                
                 Button("Применить") {
                     do {
                         let dto = try model.buildDTO()
@@ -61,6 +64,14 @@ struct ExtractedDTOFormView<T: LLMExtractable>: View {
                 }
                 .disabled(model.hasErrors)
                 .keyboardShortcut(.defaultAction)
+                
+                
+                Button("VALIDATE"){
+                    Task{
+                        let report = try await validate()
+                    }
+                }
+                
             }
             .padding(.top, 8)
         }
@@ -102,6 +113,9 @@ private struct PreviewWrapper: View {
             metadata: Requisites.fieldMetadata
         ) { updated in
             requisites = updated
+        } validate: {
+            print("validate call")
+            return nil
         }
         .frame(width: 600, height: 700)
         .padding()
