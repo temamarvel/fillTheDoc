@@ -76,7 +76,7 @@ struct MainView: View {
                             
                             let suggestion = try await client.findPartyFirst(innOrOgrn: details.inn!)
                             
-                            let validator = PartyValidator()
+                            let validator = CompanyDetailsValidator()
                             let report = validator.validate(llm: details, api: suggestion!.data)
                             
                             print(report.verdict, report.score)

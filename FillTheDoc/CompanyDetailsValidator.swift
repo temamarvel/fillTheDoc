@@ -9,7 +9,7 @@
 import Foundation
 import DaDataAPIClient
 
-public struct PartyValidator: Sendable {
+public struct CompanyDetailsValidator: Sendable {
 
     public struct Policy: Sendable {
         public var nameSimilarityThreshold: Double   // для Jaccard
@@ -36,7 +36,7 @@ public struct PartyValidator: Sendable {
         self.policy = policy
     }
 
-    public func validate(llm: CompanyDetails, api: DaDataParty) -> PartyValidationReport {
+    public func validate(llm: CompanyDetails, api: DaDataParty) -> CompanyDetailsValidationReport {
         var issues: [PartyValidationIssue] = []
         var score: Double = 1.0
 
@@ -209,7 +209,7 @@ public struct PartyValidator: Sendable {
 
         score = max(0, min(1, score))
 
-        let verdict: PartyValidationReport.Verdict
+        let verdict: CompanyDetailsValidationReport.Verdict
         if score < policy.failScoreThreshold || issues.contains(where: { $0.severity == .error }) {
             verdict = .fail
         } else if score < policy.warnScoreThreshold || issues.contains(where: { $0.severity == .warning }) {
@@ -218,6 +218,6 @@ public struct PartyValidator: Sendable {
             verdict = .pass
         }
 
-        return PartyValidationReport(verdict: verdict, score: score, issues: issues)
+        return CompanyDetailsValidationReport(verdict: verdict, score: score, issues: issues)
     }
 }

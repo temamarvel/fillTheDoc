@@ -14,12 +14,12 @@ struct ExtractedDTOFormView<T: LLMExtractable>: View {
     @StateObject private var model: EditableDTO<T>
 
     let onApply: (T) -> Void
-    let validate: () async throws -> PartyValidationReport?
+    let validate: () async throws -> CompanyDetailsValidationReport?
 
     @State private var showErrorAlert = false
     @State private var errorText = ""
 
-    init(dto: T, metadata: [String: FieldMetadata], onApply: @escaping (T) -> Void, validate: @escaping () async throws -> PartyValidationReport?) {
+    init(dto: T, metadata: [String: FieldMetadata], onApply: @escaping (T) -> Void, validate: @escaping () async throws -> CompanyDetailsValidationReport?) {
         _model = StateObject(wrappedValue: EditableDTO(dto: dto, metadata: metadata))
         self.onApply = onApply
         self.validate = validate

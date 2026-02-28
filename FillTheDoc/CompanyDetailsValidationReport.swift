@@ -9,7 +9,7 @@
 import Foundation
 import DaDataAPIClient
 
-public struct PartyValidationReport: Sendable {
+public struct CompanyDetailsValidationReport: Sendable {
     public enum Verdict: String, Sendable { case pass, warn, fail }
 
     public let verdict: Verdict
