@@ -52,6 +52,13 @@ final class CompanyDetailsModel<T: LLMExtractable>: ObservableObject {
     func value(for key: String) -> String { fields[key]?.value ?? "" }
     func message(for key: String) -> String? { fields[key]?.message }
     func severity(for key: String) -> FieldSeverity { fields[key]?.severity ?? .none }
+    func title(for key: String) -> String {
+        metadata[key]?.title ?? "FAIL_\(key.capitalized)"
+    }
+    
+    func placeholder(for key: String) -> String {
+        metadata[key]?.placeholder ?? ""
+    }
     
     var hasErrors: Bool {
         fields.values.contains { $0.severity == .error }
