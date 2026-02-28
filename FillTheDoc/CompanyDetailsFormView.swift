@@ -14,15 +14,13 @@ struct CompanyDetailsFormView<T: LLMExtractable>: View {
     @StateObject private var model: CompanyDetailsModel<T>
 
     let onApply: (T) -> Void
-    let validate: () async throws -> CompanyDetailsValidationReport?
 
     @State private var showErrorAlert = false
     @State private var errorText = ""
 
-    init(dto: T, metadata: [String: FieldMetadata], onApply: @escaping (T) -> Void, validate: @escaping () async throws -> CompanyDetailsValidationReport?) {
+    init(dto: T, metadata: [String: FieldMetadata], onApply: @escaping (T) -> Void) {
         _model = StateObject(wrappedValue: CompanyDetailsModel(dto: dto, metadata: metadata))
         self.onApply = onApply
-        self.validate = validate
     }
 
     var body: some View {

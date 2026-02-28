@@ -67,24 +67,23 @@ struct MainView: View {
                             // updated — уже struct Requisites
                             self.details = updated
                         } validate: {
-                            
-                            let token = Bundle.main.infoDictionary?["DADATA_TOKEN"] as? String ?? "N_T"
-                            
-                            let client = DaDataClient(
-                                configuration: .init(token: token)
-                            )
-                            
-                            let suggestion = try await client.findPartyFirst(innOrOgrn: details.inn!)
-                            
-                            let validator = CompanyDetailsValidator()
-                            let report = validator.validate(llm: details, api: suggestion!.data)
-                            
-                            print(report.verdict, report.score)
-                            for i in report.issues {
-                                print(i.severity, i.code, i.message)
-                            }
-                            
-                            return report
+//                            let token = Bundle.main.infoDictionary?["DADATA_TOKEN"] as? String ?? "N_T"
+//                            
+//                            let client = DaDataClient(
+//                                configuration: .init(token: token)
+//                            )
+//                            
+//                            let suggestion = try await client.findPartyFirst(innOrOgrn: details.inn!)
+//                            
+//                            let validator = CompanyDetailsValidator()
+//                            //let report = validator.(llm: details, api: suggestion!.data)
+//                            
+//                            print(report.verdict, report.score)
+//                            for i in report.issues {
+//                                print(i.severity, i.code, i.message)
+//                            }
+//                            
+//                            return report
                         }
                     }
                 }
