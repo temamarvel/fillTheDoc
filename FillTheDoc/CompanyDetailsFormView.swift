@@ -19,7 +19,14 @@ struct CompanyDetailsFormView<T: LLMExtractable>: View {
     @State private var errorText = ""
 
     init(dto: T, metadata: [String: FieldMetadata], onApply: @escaping (T) -> Void) {
-        _model = StateObject(wrappedValue: CompanyDetailsModel(dto: dto, metadata: metadata))
+        
+        let token = Bundle.main.infoDictionary?["DADATA_TOKEN"] as? String ?? "N_T"
+        
+        let client = DaDataClient(
+            configuration: .init(token: token)
+        )
+        
+        _model = StateObject(wrappedValue: CompanyDetailsModel(dto: dto, metadata: metadata, validator: CompanyDetailsValidator(), dadata: client))
         self.onApply = onApply
     }
 
@@ -62,14 +69,6 @@ struct CompanyDetailsFormView<T: LLMExtractable>: View {
                 }
                 .disabled(model.hasErrors)
                 .keyboardShortcut(.defaultAction)
-                
-                
-                Button("VALIDATE"){
-                    Task{
-                        let report = try await validate()
-                    }
-                }
-                
             }
             .padding(.top, 8)
         }
@@ -111,9 +110,6 @@ private struct PreviewWrapper: View {
             metadata: CompanyDetails.fieldMetadata
         ) { updated in
             requisites = updated
-        } validate: {
-            print("validate call")
-            return nil
         }
         .frame(width: 600, height: 700)
         .padding()

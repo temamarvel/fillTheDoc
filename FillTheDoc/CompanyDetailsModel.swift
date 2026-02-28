@@ -48,6 +48,7 @@ final class CompanyDetailsModel<T: LLMExtractable>: ObservableObject {
     
     // MARK: - Field access
     
+    func keysInOrder() -> [String] { orderedKeys }
     func value(for key: String) -> String { fields[key]?.value ?? "" }
     func message(for key: String) -> String? { fields[key]?.message }
     func severity(for key: String) -> FieldSeverity { fields[key]?.severity ?? .none }
@@ -161,5 +162,33 @@ final class CompanyDetailsModel<T: LLMExtractable>: ObservableObject {
             else { result[k] = String(describing: v) }
         }
         return result
+    }
+    
+    /// Собрать обратно DTO. Бросает ошибку, если есть ошибки (по умолчанию).
+    func buildDTO(allowWithErrors: Bool = false) throws -> T {
+        validateAll()
+//        if hasErrors && !allowWithErrors {
+//            throw ValidationError.hasErrors
+//        }
+        
+        // собираем dict (пустые строки — отсутствие значения)
+        var dict: [String: Any] = [:]
+        for key in orderedKeys {
+            let raw = value(for: key)
+            let trimmed = FieldRules.trim(raw)
+            guard !trimmed.isEmpty else { continue }
+            dict[key] = trimmed
+        }
+        
+        let data = try JSONSerialization.data(withJSONObject: dict, options: [])
+        
+        return try JSONDecoder().decode(T.self, from: data)
+//        
+//        do {
+//            return try JSONDecoder().decode(T.self, from: data)
+//        } catch {
+////            throw ValidationError.decodeFailed("\(error)")
+//            setValue(value(for: key), for: key)
+//        }
     }
 }
