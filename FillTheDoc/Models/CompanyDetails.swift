@@ -5,7 +5,7 @@
 //  Created by Артем Денисов on 20.02.2026.
 //
 
-
+//TODO: add address
 public struct CompanyDetails: Decodable, LLMExtractable {
     let companyName: String?
     let legalForm: String?
