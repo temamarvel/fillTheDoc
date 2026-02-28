@@ -9,7 +9,7 @@
 import Foundation
 import Combine
 
-final class EditableDTO<T: LLMExtractable>: ObservableObject {
+final class CompanyDetailsModel<T: LLMExtractable>: ObservableObject {
 
     struct FieldState: Equatable {
         var value: String

@@ -60,7 +60,7 @@ struct MainView: View {
 //                    }
                     
                     if let details = details {
-                        ExtractedDTOFormView(
+                        CompanyDetailsFormView(
                             dto: details,
                             metadata: CompanyDetails.fieldMetadata
                         ) { updated in

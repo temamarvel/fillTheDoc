@@ -9,9 +9,9 @@
 import SwiftUI
 import DaDataAPIClient
 
-struct ExtractedDTOFormView<T: LLMExtractable>: View {
+struct CompanyDetailsFormView<T: LLMExtractable>: View {
 
-    @StateObject private var model: EditableDTO<T>
+    @StateObject private var model: CompanyDetailsModel<T>
 
     let onApply: (T) -> Void
     let validate: () async throws -> CompanyDetailsValidationReport?
@@ -20,7 +20,7 @@ struct ExtractedDTOFormView<T: LLMExtractable>: View {
     @State private var errorText = ""
 
     init(dto: T, metadata: [String: FieldMetadata], onApply: @escaping (T) -> Void, validate: @escaping () async throws -> CompanyDetailsValidationReport?) {
-        _model = StateObject(wrappedValue: EditableDTO(dto: dto, metadata: metadata))
+        _model = StateObject(wrappedValue: CompanyDetailsModel(dto: dto, metadata: metadata))
         self.onApply = onApply
         self.validate = validate
     }
@@ -108,7 +108,7 @@ private struct PreviewWrapper: View {
     )
     
     var body: some View {
-        ExtractedDTOFormView(
+        CompanyDetailsFormView(
             dto: requisites,
             metadata: CompanyDetails.fieldMetadata
         ) { updated in
