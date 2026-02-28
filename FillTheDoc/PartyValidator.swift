@@ -36,7 +36,7 @@ public struct PartyValidator: Sendable {
         self.policy = policy
     }
 
-    public func validate(llm: Requisites, api: DaDataParty) -> PartyValidationReport {
+    public func validate(llm: CompanyDetails, api: DaDataParty) -> PartyValidationReport {
         var issues: [PartyValidationIssue] = []
         var score: Double = 1.0
 

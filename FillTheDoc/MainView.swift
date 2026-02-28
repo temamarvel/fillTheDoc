@@ -11,7 +11,7 @@ struct MainView: View {
     @State private var detailsPath: String = ""
     
     @State private var detailsText: String? = nil
-    @State private var details: Requisites? = nil
+    @State private var details: CompanyDetails? = nil
     
     @State private var isLoading: Bool = false
     
@@ -62,7 +62,7 @@ struct MainView: View {
                     if let details = details {
                         ExtractedDTOFormView(
                             dto: details,
-                            metadata: Requisites.fieldMetadata
+                            metadata: CompanyDetails.fieldMetadata
                         ) { updated in
                             // updated — уже struct Requisites
                             self.details = updated
@@ -192,7 +192,7 @@ struct MainView: View {
 //            """
                 let openAIClient = OpenAIClient(apiKey: apiKeyStore.apiKey ?? "", model: "gpt-4o-mini")
                 
-                let system = PromptBuilder.system(for: Requisites.self)
+                let system = PromptBuilder.system(for: CompanyDetails.self)
                 let user = PromptBuilder.user(sourceText: extractedResult.text)
                 
 //                let (reqs, status) = try await openAIClient.request(
@@ -203,7 +203,7 @@ struct MainView: View {
                 
                 // симуляция
                 try await Task.sleep(nanoseconds: 2_200_000_000)
-                let reqs = Requisites(companyName: "Тест компания", legalForm: "ТЕСТ_ЗАО", ceoFullName: "Тест Тестович Тестов", ceoShortenName: "Тестов Т. Т.", ogrn: "1187746707280", inn: "9731007287", kpp: "773101001", email: "test_test@test.com")
+                let reqs = CompanyDetails(companyName: "Тест компания", legalForm: "ТЕСТ_ЗАО", ceoFullName: "Тест Тестович Тестов", ceoShortenName: "Тестов Т. Т.", ogrn: "1187746707280", inn: "9731007287", kpp: "773101001", email: "test_test@test.com")
                 
                 let dtoText = reqs.toMultilineString()
                 details = reqs

@@ -74,7 +74,7 @@ enum FieldRules {
     }
 }
 
-extension Requisites {
+extension CompanyDetails {
     /// Единая таблица метаданных. Ключи — JSON keys (snake_case).
     static let fieldMetadata: [String: FieldMetadata] = [
         "company_name": FieldMetadata(

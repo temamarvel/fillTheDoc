@@ -96,7 +96,7 @@ struct ExtractedDTOFormView<T: LLMExtractable>: View {
 }
 
 private struct PreviewWrapper: View {
-    @State private var requisites = Requisites(
+    @State private var requisites = CompanyDetails(
         companyName: "ООО «Ромашка»",
         legalForm: "ООО",
         ceoFullName: "Иванов Иван Иванович",
@@ -110,7 +110,7 @@ private struct PreviewWrapper: View {
     var body: some View {
         ExtractedDTOFormView(
             dto: requisites,
-            metadata: Requisites.fieldMetadata
+            metadata: CompanyDetails.fieldMetadata
         ) { updated in
             requisites = updated
         } validate: {

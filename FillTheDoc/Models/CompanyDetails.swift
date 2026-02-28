@@ -6,7 +6,7 @@
 //
 
 
-public struct Requisites: Decodable, LLMExtractable {
+public struct CompanyDetails: Decodable, LLMExtractable {
     let companyName: String?
     let legalForm: String?
     let ceoFullName: String?
