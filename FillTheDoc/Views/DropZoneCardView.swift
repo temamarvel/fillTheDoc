@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 /// - Поддерживает drag&drop файлов (UTType.fileURL)
 /// - Показывает path (как текст) и валидность (иконка/цвет)
 /// - Может "расти по контенту" (heightToContent) или быть фиксированной по высоте
-struct DropZoneCard<Bottom: View>: View {
+struct DropZoneCardView<Bottom: View>: View {
     let title: String
     var subtitle: String? = nil
     
@@ -157,7 +157,7 @@ struct DropZoneCard<Bottom: View>: View {
 }
 
 // MARK: - Convenience init for “no bottom content”
-extension DropZoneCard where Bottom == EmptyView {
+extension DropZoneCardView where Bottom == EmptyView {
     init(
         title: String,
         subtitle: String? = nil,
@@ -190,7 +190,7 @@ private struct DropZoneCardPreviewContainer: View {
         VStack(spacing: 24) {
             
             // 1. Пустое состояние
-            DropZoneCard(
+            DropZoneCardView(
                 title: "Шаблон (DOCX)",
                 subtitle: "Перетащи сюда файл шаблона",
                 isValid: false,
@@ -199,7 +199,7 @@ private struct DropZoneCardPreviewContainer: View {
             )
             
             // 2. Валидное состояние
-            DropZoneCard(
+            DropZoneCardView(
                 title: "Реквизиты",
                 subtitle: "Файл с данными клиента",
                 isValid: true,
@@ -208,7 +208,7 @@ private struct DropZoneCardPreviewContainer: View {
             )
             
             // 3. С нижним контентом (например, загрузка)
-            DropZoneCard(
+            DropZoneCardView(
                 title: "Обработка",
                 subtitle: "Извлечение данных из документа",
                 isValid: true,

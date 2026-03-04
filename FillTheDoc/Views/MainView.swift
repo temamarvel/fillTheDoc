@@ -33,7 +33,7 @@ struct MainView: View {
                 .font(.title2.weight(.semibold))
             
             VStack(spacing: 16) {
-                DropZoneCard(
+                DropZoneCardView(
                     title: "Шаблон (DOCX)",
                     isValid: isTemplateValid,
                     path: $templatePath,
@@ -43,7 +43,7 @@ struct MainView: View {
                     heightToContent: true
                 )
                 
-                DropZoneCard(
+                DropZoneCardView(
                     title: "Реквизиты (DOC, DOCX, PDF, XLS, XLSX)",
                     isValid: isDetailsValid,
                     path: $detailsPath,

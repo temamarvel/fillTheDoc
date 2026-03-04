@@ -8,7 +8,7 @@
 import SwiftUI
 
 
-struct StatusBadge: View {
+struct StatusBadgeView: View {
     let isValid: Bool
     
     var body: some View {
@@ -24,7 +24,7 @@ struct StatusBadge: View {
 
 #Preview {
     VStack {
-        StatusBadge(isValid: true)
-        StatusBadge(isValid: false)
+        StatusBadgeView(isValid: true)
+        StatusBadgeView(isValid: false)
     }.padding(30)
 }
