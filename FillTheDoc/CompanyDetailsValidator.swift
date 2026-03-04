@@ -48,8 +48,8 @@ public struct CompanyDetailsValidator: Sendable {
     }
     
     public struct RemoteState: Sendable {
-        public var party: DaDataParty?
-        public init(party: DaDataParty? = nil) { self.party = party }
+        public var companyInfo: DaDataCompanyInfo?
+        public init(companyInfo: DaDataCompanyInfo? = nil) { self.companyInfo = companyInfo }
     }
     
     private let policy: Policy
@@ -166,24 +166,24 @@ public struct CompanyDetailsValidator: Sendable {
         if let query {
             // 3) fetch по идентификатору, который пользователь “подтвердил” уходом с поля
             do {
-                let party = try await fetchParty(dadata: dadata, query: query)
-                newRemote.party = party
+                let companyInfo = try await fetchParty(dadata: dadata, query: query)
+                newRemote.companyInfo = companyInfo
             } catch {
                 remoteMessages[query.field] = .init(.warning, "Не удалось проверить по DaData: \(error.localizedDescription)")
                 return (newRemote, merge(local: localChanged, remote: remoteMessages))
             }
             
-            guard let party = newRemote.party else {
+            guard let companyInfo = newRemote.companyInfo else {
                 remoteMessages[query.field] = .init(.warning, "DaData не вернула организацию по указанному идентификатору.")
                 return (newRemote, merge(local: localChanged, remote: remoteMessages))
             }
             
             // 4) cross-validate ВСЕ релевантные поля по свежему party
-            remoteMessages = crossValidateAll(all: all, party: party)
+            remoteMessages = crossValidateAll(all: all, companyInfo: companyInfo)
             return (newRemote, merge(local: localChanged, remote: remoteMessages))
-        } else if let party = newRemote.party {
+        } else if let party = newRemote.companyInfo {
             // 3b) сеть не дергаем, но можем подсветить расхождения относительно закешированного party
-            remoteMessages = crossValidateAll(all: all, party: party)
+            remoteMessages = crossValidateAll(all: all, companyInfo: party)
             return (newRemote, merge(local: localChanged, remote: remoteMessages))
         } else {
             // 3c) нет валидного запроса и нет кеша — только local
@@ -234,21 +234,21 @@ public struct CompanyDetailsValidator: Sendable {
         
         var newRemote = remote
         do {
-            let party = try await fetchParty(dadata: dadata, query: query)
-            newRemote.party = party
+            let companyInfo = try await fetchParty(dadata: dadata, query: query)
+            newRemote.companyInfo = companyInfo
         } catch {
             return (newRemote, [
                 query.field: .init(.warning, "Не удалось проверить по DaData: \(error.localizedDescription)")
             ])
         }
         
-        guard let party = newRemote.party else {
+        guard let companyInfo = newRemote.companyInfo else {
             return (newRemote, [
                 query.field: .init(.warning, "DaData не вернула организацию по указанному идентификатору.")
             ])
         }
         
-        let remoteMessages = crossValidateAll(all: all, party: party)
+        let remoteMessages = crossValidateAll(all: all, companyInfo: companyInfo)
         return (newRemote, remoteMessages)
     }
     
@@ -301,7 +301,7 @@ public struct CompanyDetailsValidator: Sendable {
     
     // MARK: - Cross validation with DaData
     
-    private func crossValidateAll(all: [Key: String], party: DaDataParty) -> [Key: FieldMessage] {
+    private func crossValidateAll(all: [Key: String], companyInfo: DaDataCompanyInfo) -> [Key: FieldMessage] {
         // Какие поля реально сверяем с DaData
         let keysToCheck: [Key] = [
             .ogrn, .inn, .kpp, .companyName, .ceoFullName
@@ -311,13 +311,13 @@ public struct CompanyDetailsValidator: Sendable {
         var result: [Key: FieldMessage] = [:]
         
         for key in keysToCheck {
-            if let msg = crossValidateField(field: key, all: all, party: party) {
+            if let msg = crossValidateField(field: key, all: all, companyInfo: companyInfo) {
                 result[key] = msg
             }
         }
         
         // Дополнительно: ACTIVE статус — привяжем к companyName (или сделай отдельный “form-level key”)
-        if let status = party.state?.status, !status.isEmpty, status.uppercased() != "ACTIVE" {
+        if let status = companyInfo.state?.status, !status.isEmpty, status.uppercased() != "ACTIVE" {
             result[.companyName] = result[.companyName]
             ?? .init(.warning, "Статус организации не ACTIVE (DaData: \(status)).")
         }
@@ -325,12 +325,12 @@ public struct CompanyDetailsValidator: Sendable {
         return result
     }
     
-    private func crossValidateField(field: Key, all: [Key: String], party: DaDataParty) -> FieldMessage? {
+    private func crossValidateField(field: Key, all: [Key: String], companyInfo: DaDataCompanyInfo) -> FieldMessage? {
         switch field {
                 
             case .inn:
                 guard let llmINN = present(all[.inn]) else { return nil }
-                let apiINN = party.inn.map(FormatValidators.digitsOnly)
+                let apiINN = companyInfo.inn.map(FormatValidators.digitsOnly)
                 if let apiINN, apiINN != FormatValidators.digitsOnly(llmINN) {
                     return .init(.error, "ИНН не совпадает с DaData.")
                 }
@@ -338,7 +338,7 @@ public struct CompanyDetailsValidator: Sendable {
                 
             case .kpp:
                 guard let llmKPP = present(all[.kpp]) else { return nil }
-                if let apiKPP = party.kpp.map(FormatValidators.digitsOnly),
+                if let apiKPP = companyInfo.kpp.map(FormatValidators.digitsOnly),
                    apiKPP != FormatValidators.digitsOnly(llmKPP) {
                     return .init(.warning, "КПП не совпадает с DaData.")
                 }
@@ -346,7 +346,7 @@ public struct CompanyDetailsValidator: Sendable {
                 
             case .ogrn:
                 guard let llmOGRN = present(all[.ogrn]) else { return nil }
-                if let apiOGRN = party.ogrn.map(FormatValidators.digitsOnly),
+                if let apiOGRN = companyInfo.ogrn.map(FormatValidators.digitsOnly),
                    apiOGRN != FormatValidators.digitsOnly(llmOGRN) {
                     return .init(.warning, "ОГРН/ОГРНИП не совпадает с DaData.")
                 }
@@ -356,10 +356,10 @@ public struct CompanyDetailsValidator: Sendable {
                 guard let llmName = present(all[.companyName]) else { return nil }
                 
                 let apiName =
-                party.name?.fullWithOpf
-                ?? party.name?.shortWithOpf
-                ?? party.name?.full
-                ?? party.name?.short
+                companyInfo.name?.fullWithOpf
+                ?? companyInfo.name?.shortWithOpf
+                ?? companyInfo.name?.full
+                ?? companyInfo.name?.short
                 
                 guard let apiName else { return nil }
                 
@@ -373,7 +373,7 @@ public struct CompanyDetailsValidator: Sendable {
                 
             case .ceoFullName:
                 guard let llmCEO = present(all[.ceoFullName]) else { return nil }
-                if let apiCEO = party.management?.name, !apiCEO.isEmpty {
+                if let apiCEO = companyInfo.management?.name, !apiCEO.isEmpty {
                     let sim = TextNormalization.jaccard(llmCEO, apiCEO)
                     let contains = TextNormalization.containsNormalized(llmCEO, apiCEO)
                     if !(contains || sim >= 0.70) {
@@ -402,12 +402,12 @@ public struct CompanyDetailsValidator: Sendable {
         }
     }
     
-    private func fetchParty(dadata: DaDataClient, query: Query) async throws -> DaDataParty? {
+    private func fetchParty(dadata: DaDataClient, query: Query) async throws -> DaDataCompanyInfo? {
         switch query {
             case .ogrn(let ogrn):
-                return try await dadata.findPartyFirst(innOrOgrn: ogrn)?.data
+                return try await dadata.fetchCompanyInfoFirts(innOrOgrn: ogrn)?.data
             case .inn(let inn):
-                return try await dadata.findPartyFirst(innOrOgrn: inn)?.data
+                return try await dadata.fetchCompanyInfoFirts(innOrOgrn: inn)?.data
         }
     }
     

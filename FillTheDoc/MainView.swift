@@ -225,13 +225,13 @@ struct MainView: View {
                     configuration: .init(token: token)
                 )
                 
-                let suggestion = try await client.findPartyFirst(innOrOgrn: "6900026362")
+                let suggestion = try await client.fetchCompanyInfoFirts(innOrOgrn: "6900026362")
                 
-                let party = suggestion?.data
-                print(party)
-                print(party?.name?.fullWithOpf)
-                print(party?.management?.name)
-                print(party?.state?.status)
+                let companyInfo = suggestion?.data
+                print(companyInfo)
+                print(companyInfo?.name?.fullWithOpf)
+                print(companyInfo?.management?.name)
+                print(companyInfo?.state?.status)
                 
                 let tempOutURL = makeTempOutputURL(from: templateURL!)
                 
