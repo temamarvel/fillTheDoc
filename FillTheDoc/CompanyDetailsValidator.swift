@@ -3,26 +3,39 @@ import DaDataAPIClient
 
 public struct CompanyDetailsValidator: Sendable {
     
+    public typealias Key = CompanyDetails.CodingKeys
+    
+    // MARK: - Policy
+    
     public struct Policy: Sendable {
         public var nameSimilarityThreshold: Double   // Jaccard
         public var addressSimilarityThreshold: Double
-        public var warnScoreThreshold: Double
-        public var failScoreThreshold: Double
+        
+        /// Merge policy
+        public var preferRemoteOnTie: Bool
+        public var combineTextsOnTie: Bool
         
         public init(
             nameSimilarityThreshold: Double = 0.72,
             addressSimilarityThreshold: Double = 0.55,
-            warnScoreThreshold: Double = 0.75,
-            failScoreThreshold: Double = 0.55
+            preferRemoteOnTie: Bool = false,
+            combineTextsOnTie: Bool = true
         ) {
             self.nameSimilarityThreshold = nameSimilarityThreshold
             self.addressSimilarityThreshold = addressSimilarityThreshold
-            self.warnScoreThreshold = warnScoreThreshold
-            self.failScoreThreshold = failScoreThreshold
+            self.preferRemoteOnTie = preferRemoteOnTie
+            self.combineTextsOnTie = combineTextsOnTie
         }
     }
     
-    public enum Severity: Sendable { case warning, error }
+    public enum Severity: Int, Sendable, Comparable {
+        case warning = 0
+        case error = 1
+        
+        public static func < (lhs: Severity, rhs: Severity) -> Bool {
+            lhs.rawValue < rhs.rawValue
+        }
+    }
     
     public struct FieldMessage: Sendable, Equatable {
         public var severity: Severity
@@ -36,10 +49,7 @@ public struct CompanyDetailsValidator: Sendable {
     
     public struct RemoteState: Sendable {
         public var party: DaDataParty?
-        
-        public init(party: DaDataParty? = nil) {
-            self.party = party
-        }
+        public init(party: DaDataParty? = nil) { self.party = party }
     }
     
     private let policy: Policy
@@ -48,182 +58,303 @@ public struct CompanyDetailsValidator: Sendable {
         self.policy = policy
     }
     
-    // MARK: - Local (no network) validation for a single field
+    // MARK: - Local validation (no network)
     
-    public func validateLocal(key: String, value raw: String, all: [String: String]) -> FieldMessage? {
+    public func validateLocal(field: Key, value raw: String, all: [Key: String]) -> FieldMessage? {
         let value = present(raw)
         
-        switch key {
-            case "inn":
+        switch field {
+            case .inn:
                 guard let value else { return nil }
                 if !FormatValidators.isValidINN(value) {
                     return .init(.error, "ИНН имеет неверный формат или контрольную сумму.")
                 }
                 return nil
                 
-            case "kpp":
+            case .kpp:
                 guard let value else { return nil }
                 if !FormatValidators.isValidKPP(value) {
                     return .init(.warning, "КПП выглядит некорректно (ожидается 9 цифр).")
                 }
                 return nil
                 
-            case "ogrn":
+            case .ogrn:
                 guard let value else { return nil }
                 if !FormatValidators.isValidOGRN(value) {
                     return .init(.warning, "ОГРН/ОГРНИП выглядит некорректно (контрольная сумма/длина).")
                 }
                 return nil
                 
-            case "companyName":
-                // Обычно локально можно только минимально проверить (не пустое/слишком короткое)
+            case .companyName:
                 guard let value else { return nil }
                 if value.count < 3 { return .init(.warning, "Название слишком короткое.") }
                 return nil
                 
-            case "ceoFullName":
+            case .ceoFullName:
                 guard let value else { return nil }
                 if value.count < 5 { return .init(.warning, "ФИО руководителя выглядит слишком коротким.") }
                 return nil
                 
-            case "address":
-                guard let value else { return nil }
-                if !FormatValidators.looksLikeAddress(value) {
-                    return .init(.warning, "Адрес выглядит подозрительно (не похож на адрес).")
-                }
-                return nil
-                
-            default:
+                // Эти поля локально не валидируем (или валидируй тут, если надо)
+            case .legalForm, .ceoShortenName, .email:
                 return nil
         }
     }
     
+    /// Удобный хелпер: прогнать local-валидацию по всем полям и вернуть словарь сообщений.
+    public func validateLocalAll(all: [Key: String]) -> [Key: FieldMessage] {
+        var result: [Key: FieldMessage] = [:]
+        for key in Key.allCases {
+            if let msg = validateLocal(field: key, value: all[key] ?? "", all: all) {
+                result[key] = msg
+            }
+        }
+        return result
+    }
+    
     // MARK: - Remote validation on focus lost (may call DaData)
     
-    /// Вызывай ТОЛЬКО на blur поля (потеря фокуса).
+    /// Главный метод под твою UX-логику: blur конкретного поля.
+    ///
     /// Возвращает:
-    /// - обновлённый RemoteState (кэш party)
-    /// - сообщение для конкретного поля (если есть)
+    /// - updated RemoteState (кэш DaDataParty)
+    /// - merged messages (local + remote) по понятной политике
     public func validateOnFocusLost(
-        all: [String: String],
+        changed field: Key,
+        all rawAll: [Key: String],
         remote: RemoteState,
         dadata: DaDataClient
-    ) async -> (RemoteState, [String: FieldMessage]) {
+    ) async -> (RemoteState, [Key: FieldMessage]) {
         
-        // 1) Достаём значения
-        let ogrnRaw = present(all["ogrn"])
-        let innRaw  = present(all["inn"])
+        // 0) Нормализация входа (trim)
+        let all = normalizedAll(rawAll)
         
-        // 2) Выбираем идентификатор для запроса: ОГРН > ИНН
-        let query: Query
+        // 1) Local messages (только для changed поля — обычно этого достаточно на blur)
+        //    Если хочешь — можешь заменить на validateLocalAll(all:) для “всей формы”.
+        let localChanged: [Key: FieldMessage] = {
+            if let msg = validateLocal(field: field, value: all[field] ?? "", all: all) {
+                return [field: msg]
+            }
+            return [:]
+        }()
+        
+        // 2) Решаем: нужен ли запрос в DaData?
+        //    - Если blur был на INN/OGRN: и значение валидное → делаем fetch
+        //    - Иначе: если party уже есть в remote → не дергаем сеть, просто cross-validate по кешу
+        //    - Иначе: ничего не делаем (remote пуст)
+        let query: Query?
+        switch field {
+            case .ogrn:
+                if let ogrn = present(all[.ogrn]), FormatValidators.isValidOGRN(ogrn) {
+                    query = .ogrn(FormatValidators.digitsOnly(ogrn))
+                } else {
+                    query = nil
+                }
+            case .inn:
+                if let inn = present(all[.inn]), FormatValidators.isValidINN(inn) {
+                    query = .inn(FormatValidators.digitsOnly(inn))
+                } else {
+                    query = nil
+                }
+            default:
+                query = nil
+        }
+        
+        var newRemote = remote
+        var remoteMessages: [Key: FieldMessage] = [:]
+        
+        if let query {
+            // 3) fetch по идентификатору, который пользователь “подтвердил” уходом с поля
+            do {
+                let party = try await fetchParty(dadata: dadata, query: query)
+                newRemote.party = party
+            } catch {
+                remoteMessages[query.field] = .init(.warning, "Не удалось проверить по DaData: \(error.localizedDescription)")
+                return (newRemote, merge(local: localChanged, remote: remoteMessages))
+            }
+            
+            guard let party = newRemote.party else {
+                remoteMessages[query.field] = .init(.warning, "DaData не вернула организацию по указанному идентификатору.")
+                return (newRemote, merge(local: localChanged, remote: remoteMessages))
+            }
+            
+            // 4) cross-validate ВСЕ релевантные поля по свежему party
+            remoteMessages = crossValidateAll(all: all, party: party)
+            return (newRemote, merge(local: localChanged, remote: remoteMessages))
+        } else if let party = newRemote.party {
+            // 3b) сеть не дергаем, но можем подсветить расхождения относительно закешированного party
+            remoteMessages = crossValidateAll(all: all, party: party)
+            return (newRemote, merge(local: localChanged, remote: remoteMessages))
+        } else {
+            // 3c) нет валидного запроса и нет кеша — только local
+            //      ВАЖНО: тут специально не добавляю “root error” на INN/OGRN,
+            //      потому что это blur ЛЮБОГО поля, и твой UX не должен “ругаться”
+            //      если пользователь еще не дошел до INN/OGRN.
+            return (newRemote, localChanged)
+        }
+    }
+    
+    /// Backward-compatible overload (если пока не хочешь прокидывать changed-key из UI)
+    /// Логика как у тебя была: OGRN > INN, иначе возвращаем ошибку на оба.
+    public func validateOnFocusLost(
+        all rawAll: [Key: String],
+        remote: RemoteState,
+        dadata: DaDataClient
+    ) async -> (RemoteState, [Key: FieldMessage]) {
+        
+        let all = normalizedAll(rawAll)
+        
+        let ogrnRaw = present(all[.ogrn])
+        let innRaw  = present(all[.inn])
+        
+        let query: Query?
         if let ogrnRaw, FormatValidators.isValidOGRN(ogrnRaw) {
             query = .ogrn(FormatValidators.digitsOnly(ogrnRaw))
         } else if let innRaw, FormatValidators.isValidINN(innRaw) {
             query = .inn(FormatValidators.digitsOnly(innRaw))
         } else {
-            // нет валидного ОГРН/ИНН — это твой явный error
-            var msgs: [String: FieldMessage] = [:]
+            // Твой старый “root error” режим:
+            var msgs: [Key: FieldMessage] = [:]
             
             if ogrnRaw?.isEmpty == false, !FormatValidators.isValidOGRN(ogrnRaw!) {
-                msgs["ogrn"] = .init(.warning, "ОГРН указан, но формат/контрольная сумма некорректны.")
+                msgs[.ogrn] = .init(.warning, "ОГРН указан, но формат/контрольная сумма некорректны.")
             }
             if innRaw?.isEmpty == false, !FormatValidators.isValidINN(innRaw!) {
-                msgs["inn"] = .init(.warning, "ИНН указан, но формат/контрольная сумма некорректны.")
+                msgs[.inn] = .init(.warning, "ИНН указан, но формат/контрольная сумма некорректны.")
             }
             
-            // ключевая ошибка (можешь повесить на оба поля или на отдельное “form”)
             let root = FieldMessage(.error, "Для проверки по DaData укажите корректный ОГРН или ИНН.")
-            msgs["ogrn"] = msgs["ogrn"] ?? root
-            msgs["inn"]  = msgs["inn"]  ?? root
+            msgs[.ogrn] = msgs[.ogrn] ?? root
+            msgs[.inn]  = msgs[.inn]  ?? root
             
-            return (remote, msgs)
+            return (remote, merge(local: [:], remote: msgs))
         }
         
-        // 3) Запрос к DaData
+        guard let query else { return (remote, [:]) }
+        
         var newRemote = remote
         do {
             let party = try await fetchParty(dadata: dadata, query: query)
             newRemote.party = party
         } catch {
             return (newRemote, [
-                query.keyForMessage: .init(.warning, "Не удалось проверить по DaData: \(error.localizedDescription)")
+                query.field: .init(.warning, "Не удалось проверить по DaData: \(error.localizedDescription)")
             ])
         }
         
         guard let party = newRemote.party else {
             return (newRemote, [
-                query.keyForMessage: .init(.warning, "DaData не вернула организацию по указанному идентификатору.")
+                query.field: .init(.warning, "DaData не вернула организацию по указанному идентификатору.")
             ])
         }
         
-        // 4) Сверяем ВСЕ поля с ответом DaData
-        let messages = crossValidateAll(all: all, party: party)
-        return (newRemote, messages)
+        let remoteMessages = crossValidateAll(all: all, party: party)
+        return (newRemote, remoteMessages)
     }
     
-    private enum Query {
-        case ogrn(String)
-        case inn(String)
+    // MARK: - Merge policy: local + remote
+    
+    /// Merge правило:
+    /// - если сообщение только одно → берем его
+    /// - если оба есть:
+    ///   - берем более “сильное” по severity (error > warning)
+    ///   - если severity одинаковая:
+    ///       - combineTextsOnTie=true → склеиваем тексты (local + remote)
+    ///       - иначе: preferRemoteOnTie ? remote : local
+    private func merge(local: [Key: FieldMessage], remote: [Key: FieldMessage]) -> [Key: FieldMessage] {
+        var result: [Key: FieldMessage] = local
         
-        var keyForMessage: String {
-            switch self {
-                case .ogrn: return "ogrn"
-                case .inn:  return "inn"
+        for (k, r) in remote {
+            guard let l = result[k] else {
+                result[k] = r
+                continue
+            }
+            
+            if r.severity > l.severity {
+                result[k] = r
+            } else if r.severity < l.severity {
+                result[k] = l
+            } else {
+                // tie by severity
+                if policy.combineTextsOnTie {
+                    let combined = combineTexts(local: l.text, remote: r.text)
+                    // severity одинаковая — оставляем ее
+                    result[k] = .init(l.severity, combined)
+                } else {
+                    result[k] = policy.preferRemoteOnTie ? r : l
+                }
             }
         }
+        
+        return result
     }
     
-    private func crossValidateAll(all: [String: String], party: DaDataParty) -> [String: FieldMessage] {
-        let keys = ["ogrn", "inn", "kpp", "companyName", "ceoFullName", "address"]
-        var result: [String: FieldMessage] = [:]
+    private func combineTexts(local: String, remote: String) -> String {
+        let l = local.trimmingCharacters(in: .whitespacesAndNewlines)
+        let r = remote.trimmingCharacters(in: .whitespacesAndNewlines)
+        if l.isEmpty { return r }
+        if r.isEmpty { return l }
+        if l == r { return l }
+        // аккуратно, без “простыни”
+        return "\(l)\n\(r)"
+    }
+    
+    // MARK: - Cross validation with DaData
+    
+    private func crossValidateAll(all: [Key: String], party: DaDataParty) -> [Key: FieldMessage] {
+        // Какие поля реально сверяем с DaData
+        let keysToCheck: [Key] = [
+            .ogrn, .inn, .kpp, .companyName, .ceoFullName
+            // TODO: address — когда добавишь в CompanyDetails
+        ]
         
-        for key in keys {
-            if let msg = crossValidateField(key: key, all: all, party: party) {
+        var result: [Key: FieldMessage] = [:]
+        
+        for key in keysToCheck {
+            if let msg = crossValidateField(field: key, all: all, party: party) {
                 result[key] = msg
             }
         }
         
-        // Дополнительно: статус ACTIVE (не привязан к полю — можешь повесить на companyName или отдельный ключ)
+        // Дополнительно: ACTIVE статус — привяжем к companyName (или сделай отдельный “form-level key”)
         if let status = party.state?.status, !status.isEmpty, status.uppercased() != "ACTIVE" {
-            result["companyName"] = result["companyName"]
+            result[.companyName] = result[.companyName]
             ?? .init(.warning, "Статус организации не ACTIVE (DaData: \(status)).")
         }
         
         return result
     }
     
-    // MARK: - Cross validation (field-level) with DaData
-    
-    private func crossValidateField(key: String, all: [String: String], party: DaDataParty) -> FieldMessage? {
-        
-        //TODO: use field name from data object
-        switch key {
-            case "inn":
-                guard let llmINN = present(all["inn"]) else { return nil }
+    private func crossValidateField(field: Key, all: [Key: String], party: DaDataParty) -> FieldMessage? {
+        switch field {
+                
+            case .inn:
+                guard let llmINN = present(all[.inn]) else { return nil }
                 let apiINN = party.inn.map(FormatValidators.digitsOnly)
                 if let apiINN, apiINN != FormatValidators.digitsOnly(llmINN) {
                     return .init(.error, "ИНН не совпадает с DaData.")
                 }
                 return nil
                 
-            case "kpp":
-                guard let llmKPP = present(all["kpp"]) else { return nil }
+            case .kpp:
+                guard let llmKPP = present(all[.kpp]) else { return nil }
                 if let apiKPP = party.kpp.map(FormatValidators.digitsOnly),
                    apiKPP != FormatValidators.digitsOnly(llmKPP) {
                     return .init(.warning, "КПП не совпадает с DaData.")
                 }
                 return nil
                 
-            case "ogrn":
-                guard let llmOGRN = present(all["ogrn"]) else { return nil }
+            case .ogrn:
+                guard let llmOGRN = present(all[.ogrn]) else { return nil }
                 if let apiOGRN = party.ogrn.map(FormatValidators.digitsOnly),
                    apiOGRN != FormatValidators.digitsOnly(llmOGRN) {
                     return .init(.warning, "ОГРН/ОГРНИП не совпадает с DaData.")
                 }
                 return nil
                 
-            case "companyName":
-                guard let llmName = present(all["companyName"]) else { return nil }
+            case .companyName:
+                guard let llmName = present(all[.companyName]) else { return nil }
+                
                 let apiName =
                 party.name?.fullWithOpf
                 ?? party.name?.shortWithOpf
@@ -240,8 +371,8 @@ public struct CompanyDetailsValidator: Sendable {
                 }
                 return nil
                 
-            case "ceoFullName":
-                guard let llmCEO = present(all["ceoFullName"]) else { return nil }
+            case .ceoFullName:
+                guard let llmCEO = present(all[.ceoFullName]) else { return nil }
                 if let apiCEO = party.management?.name, !apiCEO.isEmpty {
                     let sim = TextNormalization.jaccard(llmCEO, apiCEO)
                     let contains = TextNormalization.containsNormalized(llmCEO, apiCEO)
@@ -251,47 +382,24 @@ public struct CompanyDetailsValidator: Sendable {
                 }
                 return nil
                 
-            case "address":
-                guard let llmAddress = present(all["address"]) else { return nil }
-                if let apiAddress = party.address?.value, !apiAddress.isEmpty {
-                    let sim = TextNormalization.jaccard(llmAddress, apiAddress)
-                    let contains = TextNormalization.containsNormalized(llmAddress, apiAddress)
-                    
-                    if !(contains || sim >= policy.addressSimilarityThreshold) {
-                        return .init(.warning, "Адрес слабо похож на DaData (sim=\(String(format: "%.2f", sim))).")
-                    }
-                }
-                return nil
-                
-            default:
+                // сейчас не кросс-валидируем
+            case .legalForm, .ceoShortenName, .email:
                 return nil
         }
     }
     
     // MARK: - DaData query logic
     
-    private func shouldQueryDaData(
-        changedKey: String,
-        inn: String?,
-        ogrn: String?,
-        name: String?,
-        currentParty: DaDataParty?
-    ) -> Bool {
-        // не спамим сетью: если INN уже найден и не менялся — смысла нет
-        if let currentParty, let inn, FormatValidators.digitsOnly(inn) == currentParty.inn {
-            // но если changedKey = address/ceo/companyName — можно не дергать DaData повторно,
-            // потому что эти данные не улучшают поиск; кросс-проверки и так по текущему party.
-            if changedKey != "inn" && changedKey != "ogrn" && changedKey != "kpp" && changedKey != "companyName" {
-                return false
+    private enum Query {
+        case ogrn(String)
+        case inn(String)
+        
+        var field: Key {
+            switch self {
+                case .ogrn: return .ogrn
+                case .inn:  return .inn
             }
         }
-        
-        // критерии достаточности
-        if let inn, FormatValidators.isValidINN(inn) { return true }
-        if let ogrn, FormatValidators.isValidOGRN(ogrn) { return true }
-        if let name, name.count >= 3 { return true }
-        
-        return false
     }
     
     private func fetchParty(dadata: DaDataClient, query: Query) async throws -> DaDataParty? {
@@ -304,6 +412,15 @@ public struct CompanyDetailsValidator: Sendable {
     }
     
     // MARK: - Helpers
+    
+    private func normalizedAll(_ all: [Key: String]) -> [Key: String] {
+        var res: [Key: String] = [:]
+        res.reserveCapacity(all.count)
+        for (k, v) in all {
+            res[k] = v.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return res
+    }
     
     private func present(_ s: String?) -> String? {
         guard let s else { return nil }

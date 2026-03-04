@@ -16,7 +16,7 @@ public struct CompanyDetails: Decodable, LLMExtractable {
     let kpp: String?
     let email: String?
     
-    enum CodingKeys: String, CodingKey, CaseIterable {
+    public enum CodingKeys: String, CodingKey, CaseIterable {
         case companyName = "company_name"
         case legalForm = "legal_form"
         case ceoFullName = "ceo_full_name"

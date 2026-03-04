@@ -2,7 +2,12 @@ import Foundation
 import DaDataAPIClient
 import Combine
 
-final class CompanyDetailsModel<T: LLMExtractable>: ObservableObject {
+@MainActor
+final class CompanyDetailsModel: ObservableObject {
+    
+    typealias Key = CompanyDetails.CodingKeys
+    typealias Validator = CompanyDetailsValidator
+    typealias FieldMessage = CompanyDetailsValidator.FieldMessage
     
     enum FieldSeverity: Equatable { case none, warning, error }
     
@@ -13,50 +18,58 @@ final class CompanyDetailsModel<T: LLMExtractable>: ObservableObject {
         var isDirty: Bool
     }
     
-    @Published private(set) var fields: [String: FieldState] = [:]
+    // UI читает одно место
+    @Published private(set) var fields: [Key: FieldState] = [:]
     
-    private let original: [String: String]
-    private let metadata: [String: FieldMetadata]
-    private let orderedKeys: [String]
+    private let original: [Key: String]
+    private let metadata: [Key: FieldMetadata]
+    private let orderedKeys: [Key]
     
-    // NEW:
-    private let validator: CompanyDetailsValidator
+    // Split storage (идеальная схема):
+    private var localMessages: [Key: FieldMessage] = [:]
+    private var remoteMessages: [Key: FieldMessage] = [:]
+    
+    private let validator: Validator
     private let dadata: DaDataClient
-    private var remoteState = CompanyDetailsValidator.RemoteState()
+    private var remoteState = Validator.RemoteState()
     
     init(
-        dto: T,
-        metadata: [String: FieldMetadata],
-        validator: CompanyDetailsValidator,
+        dto: CompanyDetails,
+        metadata: [Key: FieldMetadata],
+        validator: Validator,
         dadata: DaDataClient
     ) {
         self.metadata = metadata
-        self.orderedKeys = T.CodingKeys.allCases.map(\.stringValue)
-        self.original = Self.dtoToStringMap(dto, keys: Set(self.orderedKeys))
+        self.orderedKeys = Key.allCases
+        self.original = Self.dtoToMap(dto)
         self.validator = validator
         self.dadata = dadata
         
-        var f: [String: FieldState] = [:]
+        var f: [Key: FieldState] = [:]
         for key in orderedKeys {
             let v = original[key] ?? ""
             f[key] = FieldState(value: v, message: nil, severity: .none, isDirty: false)
         }
         self.fields = f
         
-        validateAll()
+        // initial local pass
+        recomputeLocalMessages(all: currentMap())
+        applyMergedMessagesToFieldStates()
     }
     
-    // MARK: - Field access
+    // MARK: - Field access (для UI)
     
-    func keysInOrder() -> [String] { orderedKeys }
-    func value(for key: String) -> String { fields[key]?.value ?? "" }
-    func message(for key: String) -> String? { fields[key]?.message }
-    func severity(for key: String) -> FieldSeverity { fields[key]?.severity ?? .none }
-    func title(for key: String) -> String {
-        metadata[key]?.title ?? "FAIL_\(key.capitalized)"
+    func keysInOrder() -> [Key] { orderedKeys }
+    
+    func value(for key: Key) -> String { fields[key]?.value ?? "" }
+    func message(for key: Key) -> String? { fields[key]?.message }
+    func severity(for key: Key) -> FieldSeverity { fields[key]?.severity ?? .none }
+    
+    func title(for key: Key) -> String {
+        metadata[key]?.title ?? key.stringValue // если нет метадаты — хотя бы json-key покажем
     }
     
-    func placeholder(for key: String) -> String {
+    func placeholder(for key: Key) -> String {
         metadata[key]?.placeholder ?? ""
     }
     
@@ -64,141 +77,207 @@ final class CompanyDetailsModel<T: LLMExtractable>: ObservableObject {
         fields.values.contains { $0.severity == .error }
     }
     
-    // MARK: - Set value (local validation only)
+    // MARK: - Set value (local only)
     
-    func setValue(_ newValue: String, for key: String) {
+    func setValue(_ newValue: String, for key: Key) {
         guard var st = fields[key] else { return }
         
-        let normalized = (metadata[key]?.normalizer ?? FieldRules.trim)(newValue)
+        let normalized: String
+        if let normalizer = metadata[key]?.normalizer {
+            normalized = normalizer(newValue)
+        } else {
+            normalized = FieldRules.trim(newValue)
+        }
         st.value = normalized
         st.isDirty = (normalized != (original[key] ?? ""))
         
-        // 1) твой per-field metadata validator (если нужен)
-        let metaError = (metadata[key]?.validator ?? { _ in nil })(normalized)
-        
-        // 2) локальная форма-валидация (без сети)
-        let all = currentStringMap()
-        let localMsg = validator.validateLocal(key: key, value: normalized, all: all)
-        
-        // приоритет: metaError (обычно “жёстко”) > localMsg
-        if let metaError, !metaError.isEmpty {
-            st.message = metaError
-            st.severity = .error
-        } else if let localMsg {
-            st.message = localMsg.text
-            st.severity = (localMsg.severity == .error) ? .error : .warning
-        } else {
-            st.message = nil
-            st.severity = .none
-        }
-        
         fields[key] = st
+        
+        // пересчёт local только для этого поля (дёшево)
+        let all = currentMap()
+        localMessages[key] = localMessage(for: key, value: normalized, all: all)
+        if localMessages[key] == nil { localMessages.removeValue(forKey: key) }
+        
+        applyMergedMessagesToFieldStates()
     }
     
-    func validateAll() {
-        for key in orderedKeys {
-            setValue(value(for: key), for: key)
-        }
+    func validateAllLocal() {
+        let all = currentMap()
+        recomputeLocalMessages(all: all)
+        applyMergedMessagesToFieldStates()
     }
     
-    // MARK: - Remote validation on focus lost
+    // MARK: - Remote validation on blur
     
-    /// Вызывай из UI только при blur поля.
-    @MainActor
-    func validateOnFocusLost() async {
-        // актуализируем локальные валидаторы
-        for k in orderedKeys {
-            setValue(value(for: k), for: k)
-        }
+    /// Вызывай из UI на blur конкретного поля.
+    func validateOnFocusLost(changed key: Key) async {
+        // 1) гарантируем актуальный local (и meta validator тоже)
+        //    (можно оптимизировать до пересчёта только key, но обычно на blur ок)
+        validateAllLocal()
         
-        let all = currentStringMap()
+        let all = currentMap()
         
-        let (newRemote, remoteMessages) = await validator.validateOnFocusLost(
+        // 2) remote validate (DaData)
+        let (newRemote, remote) = await validator.validateOnFocusLost(
+            changed: key,
             all: all,
             remote: remoteState,
             dadata: dadata
         )
         remoteState = newRemote
+        remoteMessages = remote
         
-        // 1) очистить старые remote warning’и (и пересчитать local) для тех ключей, которые мы кросс-валидируем
-        let crossKeys = Set(["ogrn","inn","kpp","companyName","ceoFullName","address"])
-        for k in crossKeys {
-            guard var st = fields[k] else { continue }
-            if st.severity == .error { continue } // локальные error не затираем
+        // 3) UI всегда видит merged = local + remote по правилам ниже
+        applyMergedMessagesToFieldStates()
+    }
+    
+    /// Иногда удобно дергать “общую” проверку (как раньше), если blur-key не прокинут.
+    func validateOnFocusLost() async {
+        validateAllLocal()
+        
+        let all = currentMap()
+        let (newRemote, remote) = await validator.validateOnFocusLost(
+            all: all,
+            remote: remoteState,
+            dadata: dadata
+        )
+        remoteState = newRemote
+        remoteMessages = remote
+        
+        applyMergedMessagesToFieldStates()
+    }
+    
+    // MARK: - Build DTO
+    
+    func buildDTO(allowWithErrors: Bool = false) throws -> CompanyDetails {
+        validateAllLocal()
+        if hasErrors && !allowWithErrors {
+            // если у тебя есть свой тип ошибки — подставь его
+            // throw ValidationError.hasErrors
+        }
+        
+        return CompanyDetails(
+            companyName: present(value(for: .companyName)),
+            legalForm: present(value(for: .legalForm)),
+            ceoFullName: present(value(for: .ceoFullName)),
+            ceoShortenName: present(value(for: .ceoShortenName)),
+            ogrn: present(value(for: .ogrn)),
+            inn: present(value(for: .inn)),
+            kpp: present(value(for: .kpp)),
+            email: present(value(for: .email))
+        )
+    }
+    
+    // MARK: - Local messages policy
+    
+    /// meta validator (FieldMetadata) > validator.validateLocal
+    private func localMessage(for key: Key, value: String, all: [Key: String]) -> FieldMessage? {
+        // 1) metadata validator (обычно самый “жёсткий”)
+        if let metaError = (metadata[key]?.validator ?? { _ in nil })(value),
+           !metaError.isEmpty {
+            return .init(.error, metaError)
+        }
+        
+        // 2) validator local
+        return validator.validateLocal(field: key, value: value, all: all)
+    }
+    
+    private func recomputeLocalMessages(all: [Key: String]) {
+        var newLocal: [Key: FieldMessage] = [:]
+        newLocal.reserveCapacity(all.count)
+        
+        for key in orderedKeys {
+            let v = all[key] ?? ""
+            if let msg = localMessage(for: key, value: v, all: all) {
+                newLocal[key] = msg
+            }
+        }
+        localMessages = newLocal
+    }
+    
+    // MARK: - Merge (UI uses merged only)
+    
+    /// Правило:
+    /// - local error никогда не затираем
+    /// - remote важнее local warning (но не важнее local error)
+    /// - если local none → берём remote
+    private func mergedMessage(for key: Key) -> FieldMessage? {
+        let local = localMessages[key]
+        let remote = remoteMessages[key]
+        
+        switch (local, remote) {
+            case (nil, nil):
+                return nil
+                
+            case (let l?, nil):
+                return l
+                
+            case (nil, let r?):
+                return r
+                
+            case (let l?, let r?):
+                // error всегда выигрывает
+                if l.severity == .error { return l }
+                if r.severity == .error { return r }
+                
+                // warning vs warning: remote приоритетнее (или можно склеить тексты)
+                if l.severity == .warning, r.severity == .warning {
+                    // вариант 1: remote приоритетнее
+                    return r
+                    
+                    // вариант 2 (если хочешь склеивать):
+                    // return .init(.warning, "\(l.text)\n\(r.text)")
+                }
+                
+                // warning + none / none + warning
+                if r.severity == .warning { return r }
+                return l
+        }
+    }
+    
+    private func applyMergedMessagesToFieldStates() {
+        for key in orderedKeys {
+            guard var st = fields[key] else { continue }
             
-            let localMsg = validator.validateLocal(key: k, value: st.value, all: all)
-            if let localMsg {
-                st.message = localMsg.text
-                st.severity = (localMsg.severity == .error) ? .error : .warning
+            if let msg = mergedMessage(for: key) {
+                st.message = msg.text
+                st.severity = (msg.severity == .error) ? .error : .warning
             } else {
                 st.message = nil
                 st.severity = .none
             }
-            fields[k] = st
-        }
-        
-        // 2) наложить remote mismatch’и (они важнее local warning’ов)
-        for (k, msg) in remoteMessages {
-            guard var st = fields[k] else { continue }
-            if st.severity == .error { continue } // локальный error приоритетнее
             
-            st.message = msg.text
-            st.severity = (msg.severity == .error) ? .error : .warning
-            fields[k] = st
+            fields[key] = st
         }
     }
     
     // MARK: - Helpers
     
-    private func currentStringMap() -> [String: String] {
-        var result: [String: String] = [:]
+    private func currentMap() -> [Key: String] {
+        var result: [Key: String] = [:]
+        result.reserveCapacity(orderedKeys.count)
         for k in orderedKeys {
             result[k] = fields[k]?.value ?? ""
         }
         return result
     }
     
-    private static func dtoToStringMap(_ dto: T, keys: Set<String>) -> [String: String] {
-        let encoder = JSONEncoder()
-        guard
-            let data = try? encoder.encode(dto),
-            let obj = try? JSONSerialization.jsonObject(with: data),
-            let dict = obj as? [String: Any]
-        else { return [:] }
-        
-        var result: [String: String] = [:]
-        for (k, v) in dict where keys.contains(k) {
-            if v is NSNull { result[k] = "" }
-            else { result[k] = String(describing: v) }
-        }
-        return result
+    private static func dtoToMap(_ dto: CompanyDetails) -> [Key: String] {
+        [
+            .companyName: dto.companyName ?? "",
+            .legalForm: dto.legalForm ?? "",
+            .ceoFullName: dto.ceoFullName ?? "",
+            .ceoShortenName: dto.ceoShortenName ?? "",
+            .ogrn: dto.ogrn ?? "",
+            .inn: dto.inn ?? "",
+            .kpp: dto.kpp ?? "",
+            .email: dto.email ?? ""
+        ]
     }
     
-    /// Собрать обратно DTO. Бросает ошибку, если есть ошибки (по умолчанию).
-    func buildDTO(allowWithErrors: Bool = false) throws -> T {
-        validateAll()
-//        if hasErrors && !allowWithErrors {
-//            throw ValidationError.hasErrors
-//        }
-        
-        // собираем dict (пустые строки — отсутствие значения)
-        var dict: [String: Any] = [:]
-        for key in orderedKeys {
-            let raw = value(for: key)
-            let trimmed = FieldRules.trim(raw)
-            guard !trimmed.isEmpty else { continue }
-            dict[key] = trimmed
-        }
-        
-        let data = try JSONSerialization.data(withJSONObject: dict, options: [])
-        
-        return try JSONDecoder().decode(T.self, from: data)
-//        
-//        do {
-//            return try JSONDecoder().decode(T.self, from: data)
-//        } catch {
-////            throw ValidationError.decodeFailed("\(error)")
-//            setValue(value(for: key), for: key)
-//        }
+    private func present(_ s: String?) -> String? {
+        guard let s else { return nil }
+        let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.isEmpty ? nil : t
     }
 }

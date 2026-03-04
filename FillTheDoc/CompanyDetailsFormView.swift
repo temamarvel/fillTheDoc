@@ -8,23 +8,30 @@
 import SwiftUI
 import DaDataAPIClient
 
-struct CompanyDetailsFormView<T: LLMExtractable>: View {
+import SwiftUI
+import DaDataAPIClient
+
+struct CompanyDetailsFormView: View {
     
-    @StateObject private var model: CompanyDetailsModel<T>
-    let onApply: (T) -> Void
+    typealias Key = CompanyDetails.CodingKeys
+    
+    @StateObject private var model: CompanyDetailsModel
+    let onApply: (CompanyDetails) -> Void
     
     @State private var showErrorAlert = false
     @State private var errorText = ""
     
-    // NEW: фокус по ключу поля
-    @FocusState private var focusedKey: String?
+    // типизированный фокус
+    @FocusState private var focusedKey: Key?
     
-    init(dto: T, metadata: [String: FieldMetadata], onApply: @escaping (T) -> Void) {
-        
+    init(
+        dto: CompanyDetails,
+        metadata: [Key: FieldMetadata],
+        onApply: @escaping (CompanyDetails) -> Void
+    ) {
         let token = Bundle.main.infoDictionary?["DADATA_TOKEN"] as? String ?? "N_T"
-        
         let client = DaDataClient(configuration: .init(token: token))
-        let validator = CompanyDetailsValidator() // <-- новый валидатор
+        let validator = CompanyDetailsValidator()
         
         _model = StateObject(
             wrappedValue: CompanyDetailsModel(
@@ -60,11 +67,13 @@ struct CompanyDetailsFormView<T: LLMExtractable>: View {
             .padding(.top, 8)
         }
         .formStyle(.grouped)
+        
+        // blur обработчик: отправляем changed=old
         .onChange(of: focusedKey) { old, new in
-            // DaData валидация — только для поля, которое потеряло фокус
-            guard let old else { return }
-            Task { await model.validateOnFocusLost() }
+            guard let lost = old, lost != new else { return }
+            Task { await model.validateOnFocusLost(changed: lost) }
         }
+        
         .alert("Ошибка", isPresented: $showErrorAlert) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -75,7 +84,7 @@ struct CompanyDetailsFormView<T: LLMExtractable>: View {
     // MARK: - UI parts
     
     @ViewBuilder
-    private func fieldRow(key: String) -> some View {
+    private func fieldRow(key: Key) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(model.title(for: key))
                 .font(.subheadline.weight(.medium))
@@ -99,32 +108,31 @@ struct CompanyDetailsFormView<T: LLMExtractable>: View {
     
     // MARK: - Binding
     
-    private func binding(for key: String) -> Binding<String> {
+    private func binding(for key: Key) -> Binding<String> {
         Binding(
             get: { model.value(for: key) },
-            set: { model.setValue($0, for: key) } // локальная валидация внутри setValue
+            set: { model.setValue($0, for: key) } // local внутри
         )
     }
     
     // MARK: - Styles
     
-    private func borderColor(for key: String) -> Color {
+    private func borderColor(for key: Key) -> Color {
         switch model.severity(for: key) {
             case .error:
                 return .red.opacity(0.85)
             case .warning:
-                // более “macOS-like”, чем чисто желтый
                 return .orange.opacity(0.75)
             case .none:
                 return .clear
         }
     }
     
-    private func borderWidth(for key: String) -> CGFloat {
+    private func borderWidth(for key: Key) -> CGFloat {
         model.severity(for: key) == .none ? 0 : 1
     }
     
-    private func messageColor(for key: String) -> Color {
+    private func messageColor(for key: Key) -> Color {
         switch model.severity(for: key) {
             case .error: return .red
             case .warning: return .orange
@@ -132,8 +140,6 @@ struct CompanyDetailsFormView<T: LLMExtractable>: View {
         }
     }
 }
-
-// MARK: - Preview
 
 #Preview("Interactive") {
     PreviewWrapper()

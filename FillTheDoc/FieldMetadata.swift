@@ -75,54 +75,56 @@ enum FieldRules {
 }
 
 extension CompanyDetails {
-    /// Единая таблица метаданных. Ключи — JSON keys (snake_case).
-    static let fieldMetadata: [String: FieldMetadata] = [
-        "company_name": FieldMetadata(
-            title: "Название организации",
+    static let fieldMetadata: [CodingKeys: FieldMetadata] = [
+        .companyName: .init(
+            title: "Название",
             placeholder: "ООО «Ромашка»",
             normalizer: FieldRules.trim,
-            validator: FieldRules.optional { _ in nil }
+            validator: { v in
+                let t = FieldRules.trim(v)
+                return t.isEmpty ? "Название обязательно." : nil
+            }
         ),
-        "legal_form": FieldMetadata(
-            title: "Орг. форма",
-            placeholder: "ООО / ИП / АО ...",
-            normalizer: FieldRules.trim,
-            validator: FieldRules.optional(FieldRules.legalForm())
-        ),
-        "ceo_full_name": FieldMetadata(
-            title: "Руководитель (ФИО)",
-            placeholder: "Иванов Иван Иванович",
-            normalizer: FieldRules.trim,
-            validator: FieldRules.optional { _ in nil }
-        ),
-        "ceo_shorten_name": FieldMetadata(
-            title: "Руководитель (кратко)",
-            placeholder: "Иванов И.И.",
-            normalizer: FieldRules.trim,
-            validator: FieldRules.optional { _ in nil }
-        ),
-        "ogrn": FieldMetadata(
-            title: "ОГРН / ОГРНИП",
-            placeholder: "13 или 15 цифр",
-            normalizer: { FieldRules.digitsOnly(FieldRules.trim($0)) },
-            validator: FieldRules.optional(FieldRules.lengthIn([13, 15], label: "ОГРН/ОГРНИП"))
-        ),
-        "inn": FieldMetadata(
+        .inn: .init(
             title: "ИНН",
-            placeholder: "10 или 12 цифр",
+            placeholder: "10/12 цифр",
             normalizer: { FieldRules.digitsOnly(FieldRules.trim($0)) },
-            validator: FieldRules.optional(FieldRules.lengthIn([10, 12], label: "ИНН"))
+            validator: { _ in nil }
         ),
-        "kpp": FieldMetadata(
+        .kpp: .init(
             title: "КПП",
             placeholder: "9 цифр",
             normalizer: { FieldRules.digitsOnly(FieldRules.trim($0)) },
-            validator: FieldRules.optional(FieldRules.lengthIn([9], label: "КПП"))
+            validator: { _ in nil }
         ),
-        "email": FieldMetadata(
+        .ogrn: .init(
+            title: "ОГРН/ОГРНИП",
+            placeholder: "13/15 цифр",
+            normalizer: { FieldRules.digitsOnly(FieldRules.trim($0)) },
+            validator: { _ in nil }
+        ),
+        .ceoFullName: .init(
+            title: "Руководитель",
+            placeholder: "Иванов Иван Иванович",
+            normalizer: FieldRules.trim,
+            validator: { _ in nil }
+        ),
+        .ceoShortenName: .init(
+            title: "Руководитель (кратко)",
+            placeholder: "Иванов И.И.",
+            normalizer: FieldRules.trim,
+            validator: { _ in nil }
+        ),
+        .legalForm: .init(
+            title: "Правовая форма",
+            placeholder: "ООО / АО / ИП",
+            normalizer: FieldRules.trim,
+            validator: { _ in nil }
+        ),
+        .email: .init(
             title: "Email",
-            placeholder: "name@company.ru",
-            normalizer: FieldRules.lowercased,
+            placeholder: "example@domain.com",
+            normalizer: FieldRules.trim,
             validator: FieldRules.optional(FieldRules.email())
         )
     ]
