@@ -23,7 +23,7 @@ final class CompanyDetailsModel: ObservableObject {
     
     private let original: [Key: String]
     private let metadata: [Key: FieldMetadata]
-    private let orderedKeys: [Key]
+    private let allFieldKeys: [Key]
     
     // Split storage (идеальная схема):
     private var localMessages: [Key: FieldMessage] = [:]
@@ -40,26 +40,26 @@ final class CompanyDetailsModel: ObservableObject {
         dadata: DaDataClient
     ) {
         self.metadata = metadata
-        self.orderedKeys = Key.allCases
+        self.allFieldKeys = Key.allCases
         self.original = Self.dtoToMap(dto)
         self.validator = validator
         self.dadata = dadata
         
         var f: [Key: FieldState] = [:]
-        for key in orderedKeys {
+        for key in allFieldKeys {
             let v = original[key] ?? ""
             f[key] = FieldState(value: v, message: nil, severity: .none, isDirty: false)
         }
         self.fields = f
         
         // initial local pass
-        recomputeLocalMessages(all: currentMap())
+        recomputeLocalMessages(all: currentFieldValues)
         applyMergedMessagesToFieldStates()
     }
     
     // MARK: - Field access (для UI)
     
-    func keysInOrder() -> [Key] { orderedKeys }
+    func keysInOrder() -> [Key] { allFieldKeys }
     
     func value(for key: Key) -> String { fields[key]?.value ?? "" }
     func message(for key: Key) -> String? { fields[key]?.message }
@@ -94,7 +94,7 @@ final class CompanyDetailsModel: ObservableObject {
         fields[key] = st
         
         // пересчёт local только для этого поля (дёшево)
-        let all = currentMap()
+        let all = currentFieldValues
         localMessages[key] = localMessage(for: key, value: normalized, all: all)
         if localMessages[key] == nil { localMessages.removeValue(forKey: key) }
         
@@ -102,7 +102,7 @@ final class CompanyDetailsModel: ObservableObject {
     }
     
     func validateAllLocal() {
-        let all = currentMap()
+        let all = currentFieldValues
         recomputeLocalMessages(all: all)
         applyMergedMessagesToFieldStates()
     }
@@ -115,7 +115,7 @@ final class CompanyDetailsModel: ObservableObject {
         //    (можно оптимизировать до пересчёта только key, но обычно на blur ок)
         validateAllLocal()
         
-        let all = currentMap()
+        let all = currentFieldValues
         
         // 2) remote validate (DaData)
         let (newRemote, remote) = await validator.validateOnFocusLost(
@@ -135,7 +135,7 @@ final class CompanyDetailsModel: ObservableObject {
     func validateOnFocusLost() async {
         validateAllLocal()
         
-        let all = currentMap()
+        let all = currentFieldValues
         let (newRemote, remote) = await validator.validateOnFocusLost(
             all: all,
             remote: remoteState,
@@ -173,19 +173,22 @@ final class CompanyDetailsModel: ObservableObject {
     /// meta validator (FieldMetadata) > validator.validateLocal
     private func localMessage(for key: Key, value: String, all: [Key: String]) -> FieldMessage? {
         // 1) metadata validator (обычно самый “жёсткий”)
-        if  (metadata[key]?.validator ?? { _ in false })(value){
-            return .init(.error, "metaError") //TODO
-        }
+        
+        // MARK: seems not nessesary
+        
+//        if (metadata[key]?.validator ?? { _ in false })(value){
+//            return .init(.error, "metaError") //TODO
+//        }
         
         // 2) validator local
-        return validator.validateLocal(field: key, value: value, all: all)
+        return validator.validateLocal(fieldKey: key, value: value, all: all)
     }
     
     private func recomputeLocalMessages(all: [Key: String]) {
         var newLocal: [Key: FieldMessage] = [:]
         newLocal.reserveCapacity(all.count)
         
-        for key in orderedKeys {
+        for key in allFieldKeys {
             let v = all[key] ?? ""
             if let msg = localMessage(for: key, value: v, all: all) {
                 newLocal[key] = msg
@@ -235,7 +238,7 @@ final class CompanyDetailsModel: ObservableObject {
     }
     
     private func applyMergedMessagesToFieldStates() {
-        for key in orderedKeys {
+        for key in allFieldKeys {
             guard var st = fields[key] else { continue }
             
             if let msg = mergedMessage(for: key) {
@@ -252,12 +255,15 @@ final class CompanyDetailsModel: ObservableObject {
     
     // MARK: - Helpers
     
-    private func currentMap() -> [Key: String] {
+    
+    private var currentFieldValues: [Key: String] {
         var result: [Key: String] = [:]
-        result.reserveCapacity(orderedKeys.count)
-        for k in orderedKeys {
+        result.reserveCapacity(allFieldKeys.count)
+        
+        for k in allFieldKeys {
             result[k] = fields[k]?.value ?? ""
         }
+        
         return result
     }
     
