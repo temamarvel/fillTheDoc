@@ -60,11 +60,7 @@ public struct CompanyDetailsValidator: Sendable {
     
     // MARK: - Local validation (no network)
     
-    public func validateLocal(fieldKey: Key, value: String, all: [Key: String]) -> FieldMessage? {
-        //let value = present(raw)
-        
-        
-        //TODO: think about validators funcs signatures
+    public func validateField(for fieldKey: Key, value: String) -> FieldMessage? {
         guard let validator = CompanyDetails.fieldMetadata[fieldKey]?.validator else {
             return .init(.error, "metaError") //TODO
         }
@@ -73,53 +69,13 @@ public struct CompanyDetailsValidator: Sendable {
         
         //TODO FieldMessage same logic as ValidationResult
         return validationResult.state == .error ? FieldMessage(.error, validationResult.text ) : nil
-        
-//        if ( ?? { _ in FieldValidationResult(.error, "нет валидатора") })(value){
-//                    return .init(.error, "metaError") //TODO
-//                }
-//        switch field {
-//            case .inn:
-//                guard let value else { return nil }
-//                if !FormatValidators.isValidINN(value) {
-//                    return .init(.error, "ИНН имеет неверный формат или контрольную сумму.")
-//                }
-//                return nil
-//                
-//            case .kpp:
-//                guard let value else { return nil }
-//                if !FormatValidators.isValidKPP(value) {
-//                    return .init(.warning, "КПП выглядит некорректно (ожидается 9 цифр).")
-//                }
-//                return nil
-//                
-//            case .ogrn:
-//                guard let value else { return nil }
-//                if !FormatValidators.isValidOGRN(value) {
-//                    return .init(.warning, "ОГРН/ОГРНИП выглядит некорректно (контрольная сумма/длина).")
-//                }
-//                return nil
-//                
-//            case .companyName:
-//                guard let value else { return nil }
-//                if value.count < 3 { return .init(.warning, "Название слишком короткое.") }
-//                return nil
-//                
-//            case .ceoFullName:
-//                guard let value else { return nil }
-//                if value.count < 5 { return .init(.warning, "ФИО руководителя выглядит слишком коротким.") }
-//                return nil
-//                
-//                // Эти поля локально не валидируем (или валидируй тут, если надо)
-//            case .legalForm, .ceoShortenName, .email:
-//                return nil
-//        }
     }
     
     /// Удобный хелпер: прогнать local-валидацию по всем полям и вернуть словарь сообщений.
     public func validateLocalAll(all: [Key: String]) -> [Key: FieldMessage] {
         var result: [Key: FieldMessage] = [:]
         for key in Key.allCases {
-            if let msg = validateLocal(fieldKey: key, value: all[key] ?? "", all: all) {
+            if let msg = validateField(for: key, value: all[key] ?? "") {
                 result[key] = msg
             }
         }
@@ -146,7 +102,7 @@ public struct CompanyDetailsValidator: Sendable {
         // 1) Local messages (только для changed поля — обычно этого достаточно на blur)
         //    Если хочешь — можешь заменить на validateLocalAll(all:) для “всей формы”.
         let localChanged: [Key: FieldMessage] = {
-            if let msg = validateLocal(fieldKey: field, value: all[field] ?? "", all: all) {
+            if let msg = validateField(for: field, value: all[field] ?? "") {
                 return [field: msg]
             }
             return [:]

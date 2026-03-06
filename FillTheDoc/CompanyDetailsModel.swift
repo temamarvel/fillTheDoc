@@ -53,7 +53,7 @@ final class CompanyDetailsModel: ObservableObject {
         self.fields = f
         
         // initial local pass
-        recomputeLocalMessages(all: currentFieldValues)
+        validateFieldValues(fieldValues: currentFieldValues)
         applyMergedMessagesToFieldStates()
     }
     
@@ -94,8 +94,7 @@ final class CompanyDetailsModel: ObservableObject {
         fields[key] = st
         
         // пересчёт local только для этого поля (дёшево)
-        let all = currentFieldValues
-        localMessages[key] = localMessage(for: key, value: normalized, all: all)
+        localMessages[key] = validateField(for: key, value: normalized)
         if localMessages[key] == nil { localMessages.removeValue(forKey: key) }
         
         applyMergedMessagesToFieldStates()
@@ -103,7 +102,7 @@ final class CompanyDetailsModel: ObservableObject {
     
     func validateAllLocal() {
         let all = currentFieldValues
-        recomputeLocalMessages(all: all)
+        validateFieldValues(fieldValues: all)
         applyMergedMessagesToFieldStates()
     }
     
@@ -171,30 +170,21 @@ final class CompanyDetailsModel: ObservableObject {
     // MARK: - Local messages policy
     
     /// meta validator (FieldMetadata) > validator.validateLocal
-    private func localMessage(for key: Key, value: String, all: [Key: String]) -> FieldMessage? {
-        // 1) metadata validator (обычно самый “жёсткий”)
-        
-        // MARK: seems not nessesary
-        
-//        if (metadata[key]?.validator ?? { _ in false })(value){
-//            return .init(.error, "metaError") //TODO
-//        }
-        
-        // 2) validator local
-        return validator.validateLocal(fieldKey: key, value: value, all: all)
+    private func validateField(for key: Key, value: String) -> FieldMessage? {
+        return validator.validateField(for: key, value: value)
     }
     
-    private func recomputeLocalMessages(all: [Key: String]) {
-        var newLocal: [Key: FieldMessage] = [:]
-        newLocal.reserveCapacity(all.count)
+    private func validateFieldValues(fieldValues: [Key: String]) {
+        var newFieldMessages: [Key: FieldMessage] = [:]
+        newFieldMessages.reserveCapacity(fieldValues.count)
         
         for key in allFieldKeys {
-            let v = all[key] ?? ""
-            if let msg = localMessage(for: key, value: v, all: all) {
-                newLocal[key] = msg
+            let v = fieldValues[key] ?? ""
+            if let msg = validateField(for: key, value: v) {
+                newFieldMessages[key] = msg
             }
         }
-        localMessages = newLocal
+        localMessages = newFieldMessages
     }
     
     // MARK: - Merge (UI uses merged only)
