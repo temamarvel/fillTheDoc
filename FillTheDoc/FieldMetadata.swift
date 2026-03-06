@@ -12,7 +12,7 @@ struct FieldMetadata {
     let title: String
     let placeholder: String
     let normalizer: (String) -> String
-    let validator: (String) -> Bool   // return error text or nil
+    let validator: (String) -> FieldValidationResult   // return error text or nil
 }
 
 enum FieldRules {
@@ -82,7 +82,7 @@ extension CompanyDetails {
             normalizer: FieldRules.trim,
             validator: { v in
                 let t = FieldRules.trim(v)
-                return !t.isEmpty
+                return t.isEmpty ? FieldValidationResult(.error, "Поле не может быть пустым") : FieldValidationResult(.pass, "Название ок")
             }
         ),
         .inn: .init(
@@ -107,25 +107,25 @@ extension CompanyDetails {
             title: "Руководитель",
             placeholder: "Иванов Иван Иванович",
             normalizer: FieldRules.trim,
-            validator: { _ in true }
+            validator: { _ in FieldValidationResult(.pass, "ФИО ок") }
         ),
         .ceoShortenName: .init(
             title: "Руководитель (кратко)",
             placeholder: "Иванов И.И.",
             normalizer: FieldRules.trim,
-            validator: { _ in true }
+            validator: { _ in FieldValidationResult(.pass, "Краткое ФИО ок") }
         ),
         .legalForm: .init(
             title: "Правовая форма",
             placeholder: "ООО / АО / ИП",
             normalizer: FieldRules.trim,
-            validator: { _ in true }
+            validator: { _ in FieldValidationResult(.pass, "Правовая форма ок") }
         ),
         .email: .init(
             title: "Email",
             placeholder: "example@domain.com",
             normalizer: FieldRules.trim,
-            validator: { _ in true }
+            validator: { _ in FieldValidationResult(.pass, "email ок") }
         )
     ]
 }

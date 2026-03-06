@@ -12,15 +12,16 @@ enum FormatValidators {
         s.filter { $0.isNumber }
     }
 
-    static func isValidINN(_ innRaw: String) -> Bool {
+    static func isValidINN(_ innRaw: String) -> FieldValidationResult {
         let inn = digitsOnly(innRaw)
+        var isValid: Bool = false
         if inn.count == 10 {
-            return innChecksum10(inn)
+            isValid = innChecksum10(inn)
         }
         if inn.count == 12 {
-            return innChecksum12(inn)
+            isValid = innChecksum12(inn)
         }
-        return false
+        return isValid ? FieldValidationResult(.pass, "Верный ИНН") : FieldValidationResult(.error, "Не верный ИНН")
     }
 
     private static func innChecksum10(_ inn: String) -> Bool {
@@ -50,16 +51,19 @@ enum FormatValidators {
         return arr.count == s.count ? arr : nil
     }
 
-    static func isValidKPP(_ kppRaw: String) -> Bool {
+    static func isValidKPP(_ kppRaw: String) -> FieldValidationResult {
         let kpp = digitsOnly(kppRaw)
-        return kpp.count == 9
+        let isValid = kpp.count == 9
+        return isValid ? FieldValidationResult(.pass, "Верный КПП") : FieldValidationResult(.error, "Не верный КПП")
     }
 
-    static func isValidOGRN(_ ogrnRaw: String) -> Bool {
+    static func isValidOGRN(_ ogrnRaw: String) -> FieldValidationResult {
         let ogrn = digitsOnly(ogrnRaw)
-        if ogrn.count == 13 { return ogrnChecksum(ogrn, modBase: 11, checkDigits: 1) }
-        if ogrn.count == 15 { return ogrnChecksum(ogrn, modBase: 13, checkDigits: 1) }
-        return false
+        var isValid: Bool = false
+        if ogrn.count == 13 { isValid = ogrnChecksum(ogrn, modBase: 11, checkDigits: 1) }
+        if ogrn.count == 15 { isValid = ogrnChecksum(ogrn, modBase: 13, checkDigits: 1) }
+        
+        return isValid ? FieldValidationResult(.pass, "Верный ОГРН") : FieldValidationResult(.error, "Не верный ОГРН")
     }
 
     private static func ogrnChecksum(_ ogrn: String, modBase: Int, checkDigits: Int) -> Bool {

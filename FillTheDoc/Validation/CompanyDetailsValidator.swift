@@ -65,9 +65,18 @@ public struct CompanyDetailsValidator: Sendable {
         
         
         //TODO: think about validators funcs signatures
-        if (CompanyDetails.fieldMetadata[fieldKey]?.validator ?? { _ in false })(value){
-                    return .init(.error, "metaError") //TODO
-                }
+        guard let validator = CompanyDetails.fieldMetadata[fieldKey]?.validator else {
+            return .init(.error, "metaError") //TODO
+        }
+        
+        let validationResult = validator(value)
+        
+        //TODO FieldMessage same logic as ValidationResult
+        return validationResult.state == .error ? FieldMessage(.error, validationResult.text ) : nil
+        
+//        if ( ?? { _ in FieldValidationResult(.error, "нет валидатора") })(value){
+//                    return .init(.error, "metaError") //TODO
+//                }
 //        switch field {
 //            case .inn:
 //                guard let value else { return nil }
@@ -150,13 +159,13 @@ public struct CompanyDetailsValidator: Sendable {
         let query: Query?
         switch field {
             case .ogrn:
-                if let ogrn = present(all[.ogrn]), FormatValidators.isValidOGRN(ogrn) {
+                if let ogrn = present(all[.ogrn]), FormatValidators.isValidOGRN(ogrn).state == .pass {
                     query = .ogrn(FormatValidators.digitsOnly(ogrn))
                 } else {
                     query = nil
                 }
             case .inn:
-                if let inn = present(all[.inn]), FormatValidators.isValidINN(inn) {
+                if let inn = present(all[.inn]), FormatValidators.isValidINN(inn).state == .pass {
                     query = .inn(FormatValidators.digitsOnly(inn))
                 } else {
                     query = nil
@@ -213,18 +222,18 @@ public struct CompanyDetailsValidator: Sendable {
         let innRaw  = present(all[.inn])
         
         let query: Query?
-        if let ogrnRaw, FormatValidators.isValidOGRN(ogrnRaw) {
+        if let ogrnRaw, FormatValidators.isValidOGRN(ogrnRaw).state == .pass {
             query = .ogrn(FormatValidators.digitsOnly(ogrnRaw))
-        } else if let innRaw, FormatValidators.isValidINN(innRaw) {
+        } else if let innRaw, FormatValidators.isValidINN(innRaw).state == .pass {
             query = .inn(FormatValidators.digitsOnly(innRaw))
         } else {
             // Твой старый “root error” режим:
             var msgs: [Key: FieldMessage] = [:]
             
-            if ogrnRaw?.isEmpty == false, !FormatValidators.isValidOGRN(ogrnRaw!) {
+            if ogrnRaw?.isEmpty == false, !(FormatValidators.isValidOGRN(ogrnRaw!).state == .pass) {
                 msgs[.ogrn] = .init(.warning, "ОГРН указан, но формат/контрольная сумма некорректны.")
             }
-            if innRaw?.isEmpty == false, !FormatValidators.isValidINN(innRaw!) {
+            if innRaw?.isEmpty == false, !(FormatValidators.isValidINN(innRaw!).state == .pass) {
                 msgs[.inn] = .init(.warning, "ИНН указан, но формат/контрольная сумма некорректны.")
             }
             
