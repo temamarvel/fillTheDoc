@@ -13,11 +13,9 @@ final class CompanyDetailsModel: ObservableObject {
     typealias Validator = CompanyDetailsValidator
     typealias FieldMessage = CompanyDetailsValidator.FieldMessage
     
-    
     // UI читает одно место
     @Published private(set) var fields: [Key: FieldState] = [:]
     
-    private let original: [Key: String]
     private let metadata: [Key: FieldMetadata]
     private let allFieldKeys: [Key]
     
@@ -25,23 +23,26 @@ final class CompanyDetailsModel: ObservableObject {
     private let dadata: DaDataClient
     
     init(
-        dto: CompanyDetails,
+        companyDetails: CompanyDetails,
         metadata: [Key: FieldMetadata],
         validator: Validator,
         dadata: DaDataClient
     ) {
         self.metadata = metadata
         self.allFieldKeys = Key.allCases
-        self.original = Self.dtoToMap(dto)
         self.validator = validator
         self.dadata = dadata
-        
-        var f: [Key: FieldState] = [:]
+        self.fields = Self.createFields(companyDetails: companyDetails, allFieldKeys: allFieldKeys)
+    }
+    
+    private static func createFields(companyDetails: CompanyDetails, allFieldKeys: [Key]) -> [Key: FieldState] {
+        let dtoMap = Self.dtoToMap(companyDetails)
+        var fields: [Key: FieldState] = [:]
         for key in allFieldKeys {
-            let v = original[key] ?? ""
-            f[key] = FieldState(value: v, message: nil)
+            let fieldValue = dtoMap[key]
+            fields[key] = FieldState(value: fieldValue, message: nil)
         }
-        self.fields = f
+        return fields
     }
     
     // MARK: - Field access (для UI)

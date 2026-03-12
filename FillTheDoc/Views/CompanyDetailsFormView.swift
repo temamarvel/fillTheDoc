@@ -25,7 +25,7 @@ struct CompanyDetailsFormView: View {
     @FocusState private var focusedKey: Key?
     
     init(
-        dto: CompanyDetails,
+        companyDetails: CompanyDetails,
         metadata: [Key: FieldMetadata],
         onApply: @escaping (CompanyDetails) -> Void
     ) {
@@ -35,7 +35,7 @@ struct CompanyDetailsFormView: View {
         
         _model = StateObject(
             wrappedValue: CompanyDetailsModel(
-                dto: dto,
+                companyDetails: companyDetails,
                 metadata: metadata,
                 validator: validator,
                 dadata: client
@@ -169,7 +169,7 @@ private struct PreviewWrapper: View {
     
     var body: some View {
         CompanyDetailsFormView(
-            dto: requisites,
+            companyDetails: requisites,
             metadata: CompanyDetails.fieldMetadata
         ) { updated in
             requisites = updated

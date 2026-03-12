@@ -61,7 +61,7 @@ struct MainView: View {
                     
                     if let details = details {
                         CompanyDetailsFormView(
-                            dto: details,
+                            companyDetails: details,
                             metadata: CompanyDetails.fieldMetadata
                         ) { updated in
                             // updated — уже struct Requisites
