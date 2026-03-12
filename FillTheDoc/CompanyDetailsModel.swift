@@ -47,21 +47,11 @@ final class CompanyDetailsModel: ObservableObject {
     // MARK: - Field access (для UI)
     
     func keysInOrder() -> [Key] { allFieldKeys }
-    
     func value(for key: Key) -> String { fields[key]?.value ?? "" }
     func message(for key: Key) -> FieldMessage? { fields[key]?.message }
-    
-    func title(for key: Key) -> String {
-        metadata[key]?.title ?? key.stringValue // если нет метадаты — хотя бы json-key покажем
-    }
-    
-    func placeholder(for key: Key) -> String {
-        metadata[key]?.placeholder ?? ""
-    }
-    
-    var hasErrors: Bool {
-        fields.values.contains { $0.message != nil }
-    }
+    func title(for key: Key) -> String { metadata[key]?.title ?? key.stringValue } // если нет метадаты — хотя бы json-key покажем
+    func placeholder(for key: Key) -> String { metadata[key]?.placeholder ?? "" }
+    var hasErrors: Bool { fields.values.contains { $0.message != nil } }
     
     // MARK: - Set value (local only)
     
@@ -75,7 +65,7 @@ final class CompanyDetailsModel: ObservableObject {
             normalized = FieldRules.trim(newValue)
         }
         fieldState.value = normalized
-        fieldState.message = validateField(for: key, value: normalized)
+        fieldState.message = validateField(for: key, state: fieldState)
         
         fields[key] = fieldState
     }
@@ -108,8 +98,8 @@ final class CompanyDetailsModel: ObservableObject {
     
     // MARK: - Local messages policy
     
-    private func validateField(for key: Key, value: String) -> FieldMessage? {
-        return validator.validateField(for: key, value: value)
+    private func validateField(for key: Key, state: FieldState) -> FieldMessage? {
+        return validator.validateField(for: key, state: state)
     }
     
     

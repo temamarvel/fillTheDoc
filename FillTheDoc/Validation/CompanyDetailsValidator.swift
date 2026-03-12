@@ -69,9 +69,13 @@ public final class CompanyDetailsValidator: Sendable {
     
     // MARK: - Local validation (no network)
     
-    public func validateField(for fieldKey: Key, value: String) -> FieldMessage? {
+    public func validateField(for fieldKey: Key, state: FieldState) -> FieldMessage? {
         guard let validator = CompanyDetails.fieldMetadata[fieldKey]?.validator else {
-            return nil
+            return nil // TODO: подумать если нет валидатора то это ошибка или нет?  ведь валидации-то не было
+        }
+        
+        guard let value = state.value else {
+            return nil // TODO: подумать если нет значения то это ошибка или нет? и вообще как сюда может придти что-то без значения?
         }
         
         let validationResult = validator(value)
