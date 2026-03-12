@@ -48,7 +48,7 @@ final class CompanyDetailsModel: ObservableObject {
         var f: [Key: FieldState] = [:]
         for key in allFieldKeys {
             let v = original[key] ?? ""
-            f[key] = FieldState(value: v, errorMessage: nil)
+            f[key] = FieldState(value: v, message: nil)
         }
         self.fields = f
         
@@ -60,8 +60,10 @@ final class CompanyDetailsModel: ObservableObject {
     
     func keysInOrder() -> [Key] { allFieldKeys }
     
+    //func fields() -> [Key: FieldState] { fields }
+    
     func value(for key: Key) -> String { fields[key]?.value ?? "" }
-    func message(for key: Key) -> String? { fields[key]?.errorMessage }
+    func message(for key: Key) -> FieldMessage? { fields[key]?.message }
 //    func severity(for key: Key) -> FieldSeverity { fields[key]?.severity ?? .none }
     
     func title(for key: Key) -> String {
@@ -73,7 +75,7 @@ final class CompanyDetailsModel: ObservableObject {
     }
     
     var hasErrors: Bool {
-        fields.values.contains { $0.errorMessage != nil }
+        fields.values.contains { $0.message != nil }
     }
     
     // MARK: - Set value (local only)
@@ -90,11 +92,13 @@ final class CompanyDetailsModel: ObservableObject {
         st.value = normalized
 //        st.isDirty = (normalized != (original[key] ?? ""))
         
+        st.message = validateField(for: key, value: normalized)
+        
         fields[key] = st
         
         // пересчёт local только для этого поля (дёшево)
-        localMessages[key] = validateField(for: key, value: normalized)
-        if localMessages[key] == nil { localMessages.removeValue(forKey: key) }
+//        localMessages[key] = validateField(for: key, value: normalized)
+//        if localMessages[key] == nil { localMessages.removeValue(forKey: key) }
         
         //applyMergedMessagesToFieldStates()
     }

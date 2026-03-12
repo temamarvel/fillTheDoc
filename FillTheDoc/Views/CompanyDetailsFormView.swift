@@ -47,7 +47,9 @@ struct CompanyDetailsFormView: View {
     var body: some View {
         List {
             ForEach(model.keysInOrder(), id: \.self) { key in
-                fieldRow(key: key)
+                if let state = model.fields[key] {
+                    fieldRow(key: key, state: state)
+                }
             }
             
             HStack {
@@ -83,8 +85,31 @@ struct CompanyDetailsFormView: View {
     
     // MARK: - UI parts
     
+//    @ViewBuilder
+//    private func fieldRow(key: Key) -> some View {
+//        VStack(alignment: .leading, spacing: 6) {
+//            Text(model.title(for: key))
+//                .font(.subheadline.weight(.medium))
+//            
+//            TextField(model.placeholder(for: key), text: binding(for: key))
+//                .focused($focusedKey, equals: key)
+//                .textFieldStyle(.roundedBorder)
+//                .overlay(
+//                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+//                        .strokeBorder(borderColor(for: key), lineWidth: borderWidth(for: key))
+//                )
+//            
+//            if let msg = model.message(for: key), !msg.isEmpty {
+//                Text(msg)
+//                    .font(.caption)
+//                    .foregroundStyle(messageColor(for: key))
+//            }
+//        }
+//        .padding(.vertical, 4)
+//    }
+    
     @ViewBuilder
-    private func fieldRow(key: Key) -> some View {
+    private func fieldRow(key: Key, state: FieldState) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(model.title(for: key))
                 .font(.subheadline.weight(.medium))
@@ -94,13 +119,13 @@ struct CompanyDetailsFormView: View {
                 .textFieldStyle(.roundedBorder)
                 .overlay(
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .strokeBorder(borderColor(for: key), lineWidth: borderWidth(for: key))
+                        .strokeBorder(borderColor(for: state.message), lineWidth: borderWidth(for: state.message))
                 )
             
-            if let msg = model.message(for: key), !msg.isEmpty {
-                Text(msg)
+            if let msg = model.message(for: key), let txt = msg.text, !txt.isEmpty {
+                Text(txt)
                     .font(.caption)
-                    .foregroundStyle(messageColor(for: key))
+                    .foregroundStyle(messageColor(for: state.message))
             }
         }
         .padding(.vertical, 4)
@@ -117,23 +142,33 @@ struct CompanyDetailsFormView: View {
     
     // MARK: - Styles
     
-    private func borderColor(for key: Key) -> Color {
-        switch model.severity(for: key) {
+    private func borderColor(for message: CompanyDetailsValidator.FieldMessage?) -> Color {
+        guard let message,  let severity = message.severity else {
+            return .clear
+        }
+        
+        switch severity {
             case .error:
                 return .red.opacity(0.85)
             case .warning:
                 return .orange.opacity(0.75)
-            case .none:
-                return .clear
         }
     }
     
-    private func borderWidth(for key: Key) -> CGFloat {
-        model.severity(for: key) == .none ? 0 : 1
+    private func borderWidth(for message: CompanyDetailsValidator.FieldMessage?) -> CGFloat {
+        guard let message else {
+            return 0
+        }
+        
+        return message.severity == nil ? 0 : 1
     }
     
-    private func messageColor(for key: Key) -> Color {
-        switch model.severity(for: key) {
+    private func messageColor(for message: CompanyDetailsValidator.FieldMessage?) -> Color {
+        guard let message else {
+            return .clear
+        }
+        
+        switch message.severity {
             case .error: return .red
             case .warning: return .orange
             case .none: return .secondary

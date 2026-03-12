@@ -1,11 +1,15 @@
 import Foundation
 import DaDataAPIClient
 
+//public struct FieldMessage{
+//    
+//}
+
 public struct FieldState: Sendable, Equatable {
     var value : String?
-    var errorMessage: String?
+    var message: CompanyDetailsValidator.FieldMessage?
     var isValid: Bool {
-        errorMessage == nil
+        message == nil
     }
 }
 
@@ -66,13 +70,23 @@ public final class CompanyDetailsValidator: Sendable {
     }
     
     public struct FieldMessage: Sendable, Equatable {
-        public var severity: Severity
-        public var text: String
-        
-        public init(_ severity: Severity, _ text: String) {
-            self.severity = severity
-            self.text = text
+        public var severity: Severity? {
+            if error != nil {
+                return .error
+            }
+            if warning != nil {
+                return .warning
+            }
+            return nil
         }
+        public var text: String? { error ?? warning }
+        public var error: String?
+        public var warning: String?
+        
+//        public init(_ severity: Severity, _ text: String) {
+//            self.severity = severity
+//            self.text = text
+//        }
     }
     
     public struct RemoteState: Sendable {
@@ -94,28 +108,15 @@ public final class CompanyDetailsValidator: Sendable {
     
     public func validateField(for fieldKey: Key, value: String) -> FieldMessage? {
         guard let validator = CompanyDetails.fieldMetadata[fieldKey]?.validator else {
-            return .init(.error, "metaError") //TODO
+            return nil
         }
         
         let validationResult = validator(value)
         
         //TODO FieldMessage same logic as ValidationResult
-        return validationResult.state == .error ? FieldMessage(.error, validationResult.text ) : nil
+        return validationResult.state == .pass ? nil : FieldMessage(error: validationResult.text, warning: nil)
     }
-    
-    /// Удобный хелпер: прогнать local-валидацию по всем полям и вернуть словарь сообщений.
-//    public func validateAllFields(all: [Key: String]) -> [Key: FieldMessage] {
-//        var result: [Key: FieldMessage] = [:]
-//        for key in Key.allCases {
-//            if let msg = validateField(for: key, value: all[key] ?? "") {
-//                result[key] = msg
-//            }
-//        }
-//        return result
-//    }
-    
-    
-    
+
     public func validateOnFocusLost(fields: [Key: FieldState]) async -> [Key: FieldState] {
         //fields have to be normalized and not null before validation
         
@@ -158,8 +159,8 @@ public final class CompanyDetailsValidator: Sendable {
         var resultFields = fields
         
         for (key, state) in fields {
-            let msg = crossValidateField(fieldKey: key, state: state, companyInfo: dadataCompanyInfo)?.text
-            resultFields[key]?.errorMessage = msg
+            let msg = crossValidateField(fieldKey: key, state: state, companyInfo: dadataCompanyInfo)
+            resultFields[key]?.message = msg
         }
         
         return resultFields
@@ -175,7 +176,7 @@ public final class CompanyDetailsValidator: Sendable {
                 guard let llmINN = state.value else { return nil }
                 let apiINN = companyInfo.inn.map{FormatValidators.digitsOnly($0)}
                 if let apiINN, apiINN != FormatValidators.digitsOnly(llmINN) {
-                    return .init(.error, "ИНН не совпадает с DaData.")
+                    return FieldMessage(error: nil, warning: "ИНН не совпадает с DaData.")
                 }
                 return nil
                 
@@ -183,7 +184,7 @@ public final class CompanyDetailsValidator: Sendable {
                 guard let llmKPP = state.value else { return nil }
                 if let apiKPP = companyInfo.kpp.map({FormatValidators.digitsOnly($0)}),
                    apiKPP != FormatValidators.digitsOnly(llmKPP) {
-                    return .init(.warning, "КПП не совпадает с DaData.")
+                    return FieldMessage(error: nil, warning: "КПП не совпадает с DaData.")
                 }
                 return nil
                 
@@ -191,7 +192,7 @@ public final class CompanyDetailsValidator: Sendable {
                 guard let llmOGRN = state.value else { return nil }
                 if let apiOGRN = companyInfo.ogrn.map({FormatValidators.digitsOnly($0)}),
                    apiOGRN != FormatValidators.digitsOnly(llmOGRN) {
-                    return .init(.warning, "ОГРН/ОГРНИП не совпадает с DaData.")
+                    return FieldMessage(error: nil, warning: "ОГРН/ОГРНИП не совпадает с DaData.")
                 }
                 return nil
                 
@@ -210,7 +211,7 @@ public final class CompanyDetailsValidator: Sendable {
                 let contains = TextNormalization.containsNormalized(llmName, apiName)
                 
                 if !(contains || sim >= policy.nameSimilarityThreshold) {
-                    return .init(.warning, "Название слабо похоже на DaData (sim=\(String(format: "%.2f", sim))).")
+                    return FieldMessage(error: nil, warning: "Название слабо похоже на DaData (sim=\(String(format: "%.2f", sim))).")
                 }
                 return nil
                 
@@ -220,7 +221,7 @@ public final class CompanyDetailsValidator: Sendable {
                     let sim = TextNormalization.jaccard(llmCEO, apiCEO)
                     let contains = TextNormalization.containsNormalized(llmCEO, apiCEO)
                     if !(contains || sim >= 0.70) {
-                        return .init(.warning, "ФИО руководителя слабо похоже на DaData (sim=\(String(format: "%.2f", sim))).")
+                        return FieldMessage(error: nil, warning: "ФИО руководителя слабо похоже на DaData (sim=\(String(format: "%.2f", sim))).")
                     }
                 }
                 return nil
@@ -388,43 +389,43 @@ public final class CompanyDetailsValidator: Sendable {
     ///   - если severity одинаковая:
     ///       - combineTextsOnTie=true → склеиваем тексты (local + remote)
     ///       - иначе: preferRemoteOnTie ? remote : local
-    private func merge(local: [Key: FieldMessage], remote: [Key: FieldMessage]) -> [Key: FieldMessage] {
-        var result: [Key: FieldMessage] = local
-        
-        for (k, r) in remote {
-            guard let l = result[k] else {
-                result[k] = r
-                continue
-            }
-            
-            if r.severity > l.severity {
-                result[k] = r
-            } else if r.severity < l.severity {
-                result[k] = l
-            } else {
-                // tie by severity
-                if policy.combineTextsOnTie {
-                    let combined = combineTexts(local: l.text, remote: r.text)
-                    // severity одинаковая — оставляем ее
-                    result[k] = .init(l.severity, combined)
-                } else {
-                    result[k] = policy.preferRemoteOnTie ? r : l
-                }
-            }
-        }
-        
-        return result
-    }
+//    private func merge(local: [Key: FieldMessage], remote: [Key: FieldMessage]) -> [Key: FieldMessage] {
+//        var result: [Key: FieldMessage] = local
+//        
+//        for (k, r) in remote {
+//            guard let l = result[k] else {
+//                result[k] = r
+//                continue
+//            }
+//            
+//            if r.severity > l.severity {
+//                result[k] = r
+//            } else if r.severity < l.severity {
+//                result[k] = l
+//            } else {
+//                // tie by severity
+//                if policy.combineTextsOnTie {
+//                    let combined = combineTexts(local: l.text, remote: r.text)
+//                    // severity одинаковая — оставляем ее
+//                    result[k] = .init(l.severity, combined)
+//                } else {
+//                    result[k] = policy.preferRemoteOnTie ? r : l
+//                }
+//            }
+//        }
+//        
+//        return result
+//    }
     
-    private func combineTexts(local: String, remote: String) -> String {
-        let l = local.trimmingCharacters(in: .whitespacesAndNewlines)
-        let r = remote.trimmingCharacters(in: .whitespacesAndNewlines)
-        if l.isEmpty { return r }
-        if r.isEmpty { return l }
-        if l == r { return l }
-        // аккуратно, без “простыни”
-        return "\(l)\n\(r)"
-    }
+//    private func combineTexts(local: String, remote: String) -> String {
+//        let l = local.trimmingCharacters(in: .whitespacesAndNewlines)
+//        let r = remote.trimmingCharacters(in: .whitespacesAndNewlines)
+//        if l.isEmpty { return r }
+//        if r.isEmpty { return l }
+//        if l == r { return l }
+//        // аккуратно, без “простыни”
+//        return "\(l)\n\(r)"
+//    }
     
     // MARK: - Cross validation with DaData
     
@@ -446,7 +447,7 @@ public final class CompanyDetailsValidator: Sendable {
         // Дополнительно: ACTIVE статус — привяжем к companyName (или сделай отдельный “form-level key”)
         if let status = companyInfo.state?.status, !status.isEmpty, status.uppercased() != "ACTIVE" {
             result[.companyName] = result[.companyName]
-            ?? .init(.warning, "Статус организации не ACTIVE (DaData: \(status)).")
+            ?? FieldMessage(error: nil, warning: "Статус организации не ACTIVE (DaData: \(status)).")
         }
         
         return result
@@ -458,7 +459,7 @@ public final class CompanyDetailsValidator: Sendable {
                 guard let llmINN = present(all[.inn]) else { return nil }
                 let apiINN = companyInfo.inn.map{FormatValidators.digitsOnly($0)}
                 if let apiINN, apiINN != FormatValidators.digitsOnly(llmINN) {
-                    return .init(.error, "ИНН не совпадает с DaData.")
+                    return FieldMessage(error: nil, warning: "ИНН не совпадает с DaData.")
                 }
                 return nil
                 
@@ -466,7 +467,7 @@ public final class CompanyDetailsValidator: Sendable {
                 guard let llmKPP = present(all[.kpp]) else { return nil }
                 if let apiKPP = companyInfo.kpp.map({FormatValidators.digitsOnly($0)}),
                    apiKPP != FormatValidators.digitsOnly(llmKPP) {
-                    return .init(.warning, "КПП не совпадает с DaData.")
+                    return FieldMessage(error: nil, warning: "КПП не совпадает с DaData.")
                 }
                 return nil
                 
@@ -474,7 +475,7 @@ public final class CompanyDetailsValidator: Sendable {
                 guard let llmOGRN = present(all[.ogrn]) else { return nil }
                 if let apiOGRN = companyInfo.ogrn.map({FormatValidators.digitsOnly($0)}),
                    apiOGRN != FormatValidators.digitsOnly(llmOGRN) {
-                    return .init(.warning, "ОГРН/ОГРНИП не совпадает с DaData.")
+                    return FieldMessage(error: nil, warning: "ОГРН/ОГРНИП не совпадает с DaData.")
                 }
                 return nil
                 
@@ -493,7 +494,7 @@ public final class CompanyDetailsValidator: Sendable {
                 let contains = TextNormalization.containsNormalized(llmName, apiName)
                 
                 if !(contains || sim >= policy.nameSimilarityThreshold) {
-                    return .init(.warning, "Название слабо похоже на DaData (sim=\(String(format: "%.2f", sim))).")
+                    return FieldMessage(error: nil, warning: "Название слабо похоже на DaData (sim=\(String(format: "%.2f", sim))).")
                 }
                 return nil
                 
@@ -503,7 +504,7 @@ public final class CompanyDetailsValidator: Sendable {
                     let sim = TextNormalization.jaccard(llmCEO, apiCEO)
                     let contains = TextNormalization.containsNormalized(llmCEO, apiCEO)
                     if !(contains || sim >= 0.70) {
-                        return .init(.warning, "ФИО руководителя слабо похоже на DaData (sim=\(String(format: "%.2f", sim))).")
+                        return FieldMessage(error: nil, warning: "ФИО руководителя слабо похоже на DaData (sim=\(String(format: "%.2f", sim))).")
                     }
                 }
                 return nil
