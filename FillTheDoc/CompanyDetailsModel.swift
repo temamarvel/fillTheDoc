@@ -2,6 +2,10 @@ import Foundation
 import DaDataAPIClient
 import Combine
 
+public struct ValidationError: Error {
+    let message: String
+}
+
 @MainActor
 final class CompanyDetailsModel: ObservableObject {
     
@@ -9,14 +13,6 @@ final class CompanyDetailsModel: ObservableObject {
     typealias Validator = CompanyDetailsValidator
     typealias FieldMessage = CompanyDetailsValidator.FieldMessage
     
-//    enum FieldSeverity: Equatable { case none, warning, error }
-//    
-//    struct FieldState: Equatable {
-//        var value: String
-//        var message: String?
-//        var severity: FieldSeverity
-//        var isDirty: Bool
-//    }
     
     // UI читает одно место
     @Published private(set) var fields: [Key: FieldState] = [:]
@@ -25,13 +21,8 @@ final class CompanyDetailsModel: ObservableObject {
     private let metadata: [Key: FieldMetadata]
     private let allFieldKeys: [Key]
     
-    // Split storage (идеальная схема):
-    private var localMessages: [Key: FieldMessage] = [:]
-    private var remoteMessages: [Key: FieldMessage] = [:]
-    
     private var validator: Validator
     private let dadata: DaDataClient
-    private var remoteState = Validator.RemoteState()
     
     init(
         dto: CompanyDetails,
@@ -51,20 +42,14 @@ final class CompanyDetailsModel: ObservableObject {
             f[key] = FieldState(value: v, message: nil)
         }
         self.fields = f
-        
-        // initial local pass
-        validateAllFields()
     }
     
     // MARK: - Field access (для UI)
     
     func keysInOrder() -> [Key] { allFieldKeys }
     
-    //func fields() -> [Key: FieldState] { fields }
-    
     func value(for key: Key) -> String { fields[key]?.value ?? "" }
     func message(for key: Key) -> FieldMessage? { fields[key]?.message }
-//    func severity(for key: Key) -> FieldSeverity { fields[key]?.severity ?? .none }
     
     func title(for key: Key) -> String {
         metadata[key]?.title ?? key.stringValue // если нет метадаты — хотя бы json-key покажем
@@ -81,7 +66,7 @@ final class CompanyDetailsModel: ObservableObject {
     // MARK: - Set value (local only)
     
     func setValue(_ newValue: String, for key: Key) {
-        guard var st = fields[key] else { return }
+        guard var fieldState = fields[key] else { return }
         
         let normalized: String
         if let normalizer = metadata[key]?.normalizer {
@@ -89,63 +74,24 @@ final class CompanyDetailsModel: ObservableObject {
         } else {
             normalized = FieldRules.trim(newValue)
         }
-        st.value = normalized
-//        st.isDirty = (normalized != (original[key] ?? ""))
+        fieldState.value = normalized
+        fieldState.message = validateField(for: key, value: normalized)
         
-        st.message = validateField(for: key, value: normalized)
-        
-        fields[key] = st
-        
-        // пересчёт local только для этого поля (дёшево)
-//        localMessages[key] = validateField(for: key, value: normalized)
-//        if localMessages[key] == nil { localMessages.removeValue(forKey: key) }
-        
-        //applyMergedMessagesToFieldStates()
-    }
-    
-    func validateAllFields() {
-        validateFieldValues(fieldValues: currentFieldValues)
-        //applyMergedMessagesToFieldStates()
+        fields[key] = fieldState
     }
     
     // MARK: - Remote validation on blur
-    
-    /// Вызывай из UI на blur конкретного поля.
-//    func validateOnFocusLost(changed key: Key) async {
-//        // 1) гарантируем актуальный local (и meta validator тоже)
-//        //    (можно оптимизировать до пересчёта только key, но обычно на blur ок)
-//        validateAllFields()
-//        
-//        let all = currentFieldValues
-//        
-//        // 2) remote validate (DaData)
-//        let dictionary = await validator.validateOnFocusLost(fields: fields)
-////        remoteState = newRemote
-////        remoteMessages = remote
-//        
-//        // 3) UI всегда видит merged = local + remote по правилам ниже
-//        //applyMergedMessagesToFieldStates()
-//    }
-    
-    /// Иногда удобно дергать “общую” проверку (как раньше), если blur-key не прокинут.
-    func validateOnFocusLost() async {
-        validateAllFields()
-        
-//        let all = currentFieldValues
-        fields = await validator.validateOnFocusLost(fields: fields)
-//        remoteState = newRemote
-//        remoteMessages = remote
-//        
-//        applyMergedMessagesToFieldStates()
+
+    func validateFieldsWithReference() async {
+        fields = await validator.validateFieldsWithReference(fields: fields)
     }
     
     // MARK: - Build DTO
     
-    func buildDTO(allowWithErrors: Bool = false) throws -> CompanyDetails {
-        validateAllFields()
+    func buildResult() throws -> CompanyDetails {
         if hasErrors {
             // если у тебя есть свой тип ошибки — подставь его
-            // throw ValidationError.hasErrors
+            throw ValidationError(message: "В форме есть ошибки")
         }
         
         return CompanyDetails(
@@ -162,82 +108,12 @@ final class CompanyDetailsModel: ObservableObject {
     
     // MARK: - Local messages policy
     
-    /// meta validator (FieldMetadata) > validator.validateLocal
     private func validateField(for key: Key, value: String) -> FieldMessage? {
         return validator.validateField(for: key, value: value)
     }
     
-    private func validateFieldValues(fieldValues: [Key: String]) {
-        var newFieldMessages: [Key: FieldMessage] = [:]
-        newFieldMessages.reserveCapacity(fieldValues.count)
-        
-        for key in allFieldKeys {
-            let v = fieldValues[key] ?? ""
-            if let msg = validateField(for: key, value: v) {
-                newFieldMessages[key] = msg
-            }
-        }
-        localMessages = newFieldMessages
-    }
-    
-    // MARK: - Merge (UI uses merged only)
-    
-    /// Правило:
-    /// - local error никогда не затираем
-    /// - remote важнее local warning (но не важнее local error)
-    /// - если local none → берём remote
-    private func mergedMessage(for key: Key) -> FieldMessage? {
-        let local = localMessages[key]
-        let remote = remoteMessages[key]
-        
-        switch (local, remote) {
-            case (nil, nil):
-                return nil
-                
-            case (let l?, nil):
-                return l
-                
-            case (nil, let r?):
-                return r
-                
-            case (let l?, let r?):
-                // error всегда выигрывает
-                if l.severity == .error { return l }
-                if r.severity == .error { return r }
-                
-                // warning vs warning: remote приоритетнее (или можно склеить тексты)
-                if l.severity == .warning, r.severity == .warning {
-                    // вариант 1: remote приоритетнее
-                    return r
-                    
-                    // вариант 2 (если хочешь склеивать):
-                    // return .init(.warning, "\(l.text)\n\(r.text)")
-                }
-                
-                // warning + none / none + warning
-                if r.severity == .warning { return r }
-                return l
-        }
-    }
-    
-//    private func applyMergedMessagesToFieldStates() {
-//        for key in allFieldKeys {
-//            guard var st = fields[key] else { continue }
-//            
-//            if let msg = mergedMessage(for: key) {
-//                st.message = msg.text
-//                st.severity = (msg.severity == .error) ? .error : .warning
-//            } else {
-//                st.message = nil
-//                st.severity = .none
-//            }
-//            
-//            fields[key] = st
-//        }
-//    }
     
     // MARK: - Helpers
-    
     
     private var currentFieldValues: [Key: String] {
         var result: [Key: String] = [:]

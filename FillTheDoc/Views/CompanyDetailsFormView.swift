@@ -56,7 +56,7 @@ struct CompanyDetailsFormView: View {
                 Spacer()
                 Button("Применить") {
                     do {
-                        let dto = try model.buildDTO()
+                        let dto = try model.buildResult()
                         onApply(dto)
                     } catch {
                         errorText = error.localizedDescription
@@ -73,7 +73,7 @@ struct CompanyDetailsFormView: View {
         // blur обработчик: отправляем changed=old
         .onChange(of: focusedKey) { old, new in
             guard let lost = old, lost != new else { return }
-            Task { await model.validateOnFocusLost() }
+            Task { await model.validateFieldsWithReference() }
         }
         
         .alert("Ошибка", isPresented: $showErrorAlert) {
@@ -82,31 +82,7 @@ struct CompanyDetailsFormView: View {
             Text(errorText)
         }
     }
-    
-    // MARK: - UI parts
-    
-//    @ViewBuilder
-//    private func fieldRow(key: Key) -> some View {
-//        VStack(alignment: .leading, spacing: 6) {
-//            Text(model.title(for: key))
-//                .font(.subheadline.weight(.medium))
-//            
-//            TextField(model.placeholder(for: key), text: binding(for: key))
-//                .focused($focusedKey, equals: key)
-//                .textFieldStyle(.roundedBorder)
-//                .overlay(
-//                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-//                        .strokeBorder(borderColor(for: key), lineWidth: borderWidth(for: key))
-//                )
-//            
-//            if let msg = model.message(for: key), !msg.isEmpty {
-//                Text(msg)
-//                    .font(.caption)
-//                    .foregroundStyle(messageColor(for: key))
-//            }
-//        }
-//        .padding(.vertical, 4)
-//    }
+
     
     @ViewBuilder
     private func fieldRow(key: Key, state: FieldState) -> some View {
