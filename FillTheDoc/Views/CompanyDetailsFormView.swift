@@ -85,6 +85,7 @@ struct CompanyDetailsFormView: View {
     private func fieldRow(key: CompanyDetailsModel.Key, state: FieldState) -> some View {
         
         let message = state.message
+        let color = messageColor(for: message)
         
         HStack(alignment: .firstTextBaseline) {
             Text(model.title(for: key))
@@ -97,7 +98,7 @@ struct CompanyDetailsFormView: View {
                 if let message = message?.text {
                     Text(message)
                         .font(.caption)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(color)
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
@@ -106,8 +107,8 @@ struct CompanyDetailsFormView: View {
                     LinearGradient(
                         colors: [
                             .clear,
-                            messageColor(for: model.message(for: key)).opacity(0.10),
-                            .red.opacity(0.22)
+                            color.opacity(0.10),
+                            color.opacity(0.22)
                         ],
                         startPoint: .leading,
                         endPoint: .trailing
