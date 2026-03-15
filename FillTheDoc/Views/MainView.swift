@@ -26,7 +26,7 @@ struct MainView: View {
     private var isDetailsValid: Bool { isExistingFile(detailsURL) }
     
     private var canRun: Bool { isTemplateValid && isDetailsValid && apiKeyStore.hasKey }
-
+    
     var body: some View {
         VStack(spacing: 16) {
             Text("Заполнение документа")
@@ -54,13 +54,16 @@ struct MainView: View {
                 )
             }
             
-            if let details = details {
-                CompanyDetailsFormView(
-                    companyDetails: details,
-                    metadata: CompanyDetails.fieldMetadata
-                ) { updated in
-                    // updated — уже struct Requisites
-                    self.details = updated
+            Group {
+                if let details {
+                    CompanyDetailsFormView(
+                        companyDetails: details,
+                        metadata: CompanyDetails.fieldMetadata
+                    ) { updated in
+                        self.details = updated
+                    }
+                } else {
+                    EmptyCompanyDetailsPlaceholder()
                 }
             }
             
@@ -115,7 +118,7 @@ struct MainView: View {
                     // Можно показать тост/алерт, сбросить состояние и т.п.
                     //errorText = nil
                     print("NEW DOC SAVED")
-                //case .failure(let error):
+                    //case .failure(let error):
                 case .failure:
                     // Отмена пользователем приходит как ошибка? Обычно нет, но иногда может.
                     print("NEW DOC! Не удалось сохранить файл")
@@ -154,33 +157,33 @@ struct MainView: View {
                 print("Chars:", extractedResult.diagnostics.producedChars)
                 
                 // симуляция
-//                try await Task.sleep(nanoseconds: 2_200_000_000)
-//                print("OK")
-//                
-//                let fakeJSON = """
-//            {
-//                "company": "ООО Ромашка",
-//                "director": "Иванов Иван Иванович",
-//                "form": "ООО"
-//            }
-//            """
+                //                try await Task.sleep(nanoseconds: 2_200_000_000)
+                //                print("OK")
+                //
+                //                let fakeJSON = """
+                //            {
+                //                "company": "ООО Ромашка",
+                //                "director": "Иванов Иван Иванович",
+                //                "form": "ООО"
+                //            }
+                //            """
                 
                 //TODO: real request to openai
-//                let openAIClient = OpenAIClient(apiKey: apiKeyStore.apiKey ?? "", model: "gpt-4o-mini")
-//                let system = PromptBuilder.system(for: CompanyDetails.self)
-//                let user = PromptBuilder.user(sourceText: extractedResult.text)
+                //                let openAIClient = OpenAIClient(apiKey: apiKeyStore.apiKey ?? "", model: "gpt-4o-mini")
+                //                let system = PromptBuilder.system(for: CompanyDetails.self)
+                //                let user = PromptBuilder.user(sourceText: extractedResult.text)
                 
-//                let (reqs, status) = try await openAIClient.request(
-//                    system: system,
-//                    user: user,
-//                    as: Requisites.self
-//                )
+                //                let (reqs, status) = try await openAIClient.request(
+                //                    system: system,
+                //                    user: user,
+                //                    as: Requisites.self
+                //                )
                 
                 // симуляция
                 try await Task.sleep(nanoseconds: 2_200_000_000)
                 
                 //MARK: valid test data
-//                let reqs = CompanyDetails(companyName: "Тест компания", legalForm: "ТЕСТ_ЗАО", ceoFullName: "Тест Тестович Тестов", ceoShortenName: "Тестов Т. Т.", ogrn: "1187746707280", inn: "9731007287", kpp: "773101001", email: "test_test@test.com")
+                //                let reqs = CompanyDetails(companyName: "Тест компания", legalForm: "ТЕСТ_ЗАО", ceoFullName: "Тест Тестович Тестов", ceoShortenName: "Тестов Т. Т.", ogrn: "1187746707280", inn: "9731007287", kpp: "773101001", email: "test_test@test.com")
                 
                 //MARK: invalid test data
                 let reqs = CompanyDetails(companyName: "Тест компания", legalForm: "ТЕСТ_ЗАО", ceoFullName: "Тест Тестович Тестов", ceoShortenName: "Тестов Т. Т.", ogrn: "11877467072801", inn: "97310107287", kpp: "7731010101", email: "test_test@test.com")
@@ -206,54 +209,54 @@ struct MainView: View {
     
     private func runFill() async {
         
-            isLoading = true
-            defer { isLoading = false  }
+        isLoading = true
+        defer { isLoading = false  }
+        
+        do {
+            let values: [String: String] = [
+                "company": "ООО «Ромашка»",
+                "director": "Иванов Иван Иванович",
+                "inn": "7701234567"
+            ]
             
-            do {
-                let values: [String: String] = [
-                    "company": "ООО «Ромашка»",
-                    "director": "Иванов Иван Иванович",
-                    "inn": "7701234567"
-                ]
-                
-                print(Bundle.main.infoDictionary?["DADATA_TOKEN"] as? String ?? "N_T")
-                
-                let token = Bundle.main.infoDictionary?["DADATA_TOKEN"] as? String ?? "N_T"
-                
-                let client = DaDataClient(
-                    configuration: .init(token: token)
-                )
-                
-                let suggestion = try await client.fetchCompanyInfoFirts(innOrOgrn: "6900026362")
-                
-                let companyInfo = suggestion?.data
-                if let companyInfo {
-                    print(companyInfo)
-                    print(companyInfo.name?.fullWithOpf ?? "nil")
-                    print(companyInfo.management?.name ?? "nil")
-                    print(companyInfo.state?.status ?? "nil")
-                }
-                
-                let tempOutURL = makeTempOutputURL(from: templateURL!)
-                
-                let report = try replacer.fill(
-                    template: templateURL!,
-                    output: tempOutURL,
-                    values: values
-                )
-                
-                exportDocument = try DocxFileDocument(fileURL: tempOutURL)
-                exportDefaultFilename = "\(templateURL!.deletingPathExtension().lastPathComponent)_filled"
-                
-                // 4) показываем SavePanel
-                showExporter = true
-                
-                print("missing", report.missingKeys)
-                print("found", report.foundKeys)
-                print("REPLACE OK")
-            } catch {
-                print("Replacement failed:", error)
+            print(Bundle.main.infoDictionary?["DADATA_TOKEN"] as? String ?? "N_T")
+            
+            let token = Bundle.main.infoDictionary?["DADATA_TOKEN"] as? String ?? "N_T"
+            
+            let client = DaDataClient(
+                configuration: .init(token: token)
+            )
+            
+            let suggestion = try await client.fetchCompanyInfoFirts(innOrOgrn: "6900026362")
+            
+            let companyInfo = suggestion?.data
+            if let companyInfo {
+                print(companyInfo)
+                print(companyInfo.name?.fullWithOpf ?? "nil")
+                print(companyInfo.management?.name ?? "nil")
+                print(companyInfo.state?.status ?? "nil")
             }
+            
+            let tempOutURL = makeTempOutputURL(from: templateURL!)
+            
+            let report = try replacer.fill(
+                template: templateURL!,
+                output: tempOutURL,
+                values: values
+            )
+            
+            exportDocument = try DocxFileDocument(fileURL: tempOutURL)
+            exportDefaultFilename = "\(templateURL!.deletingPathExtension().lastPathComponent)_filled"
+            
+            // 4) показываем SavePanel
+            showExporter = true
+            
+            print("missing", report.missingKeys)
+            print("found", report.foundKeys)
+            print("REPLACE OK")
+        } catch {
+            print("Replacement failed:", error)
+        }
         
     }
     
