@@ -53,6 +53,7 @@ struct MainView: View {
                     }
                 )
             }
+
             
             Group {
                 if let details {
@@ -87,23 +88,23 @@ struct MainView: View {
                 Spacer()
             }
             
-            if !apiKeyStore.hasKey {
-                Text("Добавь API ключ (появится окно ввода).")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-            
-            if !isTemplateValid || !isDetailsValid {
-                Text("Добавь оба файла: шаблон и реквизиты.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-            
-            if let err = apiKeyStore.errorText {
-                Text(err)
-                    .font(.footnote)
-                    .foregroundStyle(.red)
-            }
+//            if !apiKeyStore.hasKey {
+//                Text("Добавь API ключ (появится окно ввода).")
+//                    .font(.footnote)
+//                    .foregroundStyle(.secondary)
+//            }
+//            
+//            if !isTemplateValid || !isDetailsValid {
+//                Text("Добавь оба файла: шаблон и реквизиты.")
+//                    .font(.footnote)
+//                    .foregroundStyle(.secondary)
+//            }
+//            
+//            if let err = apiKeyStore.errorText {
+//                Text(err)
+//                    .font(.footnote)
+//                    .foregroundStyle(.red)
+//            }
         }
         .padding(20)
         .fileExporter(
