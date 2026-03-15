@@ -82,6 +82,7 @@ struct MainView: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
                 }
+                .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.defaultAction)
                 .disabled(!canRun || isLoading)
                 
