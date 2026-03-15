@@ -216,8 +216,8 @@ struct MainView: View {
         
         do {
             let values: [String: String] = [
-                "company": "ООО «Ромашка»",
-                "director": "Иванов Иван Иванович",
+                "company_name": "ООО «Ромашка»",
+                "ceo_full_name": "Иванов Иван Иванович",
                 "inn": "7701234567"
             ]
             
