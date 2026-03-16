@@ -2,14 +2,6 @@
 //  DocxTemplatePlaceholderScanner.swift
 //  FillTheDoc
 //
-//  Created by Артем Денисов on 16.03.2026.
-//
-
-
-//
-//  DocxTemplatePlaceholderScanner.swift
-//  FillTheDoc
-//
 //  Created by Artem Denisov on 16.03.2026.
 //
 
