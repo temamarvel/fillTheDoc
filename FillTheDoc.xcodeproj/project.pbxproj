@@ -12,11 +12,13 @@
 		3B72239C2F43B1AD00E17F90 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 3B72239B2F43B1AD00E17F90 /* ZIPFoundation */; };
 		3B7223A12F45037F00E17F90 /* DaDataAPIClient in Frameworks */ = {isa = PBXBuildFile; productRef = 3B7223A02F45037F00E17F90 /* DaDataAPIClient */; };
 		3B7223A32F4795CF00E17F90 /* Secrets.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3B7223A22F4795CF00E17F90 /* Secrets.xcconfig */; };
+		3B961A1B2F68856A002AE1B1 /* app_icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 3B961A1A2F68856A002AE1B1 /* app_icon.icon */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		3B12811B2F39C4BE003B76B1 /* FillTheDoc.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FillTheDoc.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B7223A22F4795CF00E17F90 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		3B961A1A2F68856A002AE1B1 /* app_icon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = app_icon.icon; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -59,6 +61,7 @@
 			isa = PBXGroup;
 			children = (
 				3B7223A22F4795CF00E17F90 /* Secrets.xcconfig */,
+				3B961A1A2F68856A002AE1B1 /* app_icon.icon */,
 				3B12811D2F39C4BE003B76B1 /* FillTheDoc */,
 				3B12811C2F39C4BE003B76B1 /* Products */,
 			);
@@ -146,6 +149,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3B961A1B2F68856A002AE1B1 /* app_icon.icon in Resources */,
 				3B7223A32F4795CF00E17F90 /* Secrets.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -287,7 +291,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 3B7223A22F4795CF00E17F90 /* Secrets.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = app_icon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -334,7 +338,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 3B7223A22F4795CF00E17F90 /* Secrets.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = app_icon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
