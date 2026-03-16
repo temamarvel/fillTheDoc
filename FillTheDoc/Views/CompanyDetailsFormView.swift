@@ -8,9 +8,6 @@
 import SwiftUI
 import DaDataAPIClient
 
-import SwiftUI
-import DaDataAPIClient
-
 struct CompanyDetailsFormView: View {
     
     typealias Key = CompanyDetails.CodingKeys

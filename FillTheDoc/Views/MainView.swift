@@ -22,13 +22,15 @@ struct MainView: View {
     
     @State private var templatePlaceholders: [String] = [ ]
     
+    @State private var isDataApproved: Bool = false
+    
     private var templateURL: URL? { url(from: templatePath) }
     private var detailsURL: URL? { url(from: detailsPath) }
     
     private var isTemplateValid: Bool { isExistingFile(templateURL) }
     private var isDetailsValid: Bool { isExistingFile(detailsURL) }
     
-    private var canRun: Bool { isTemplateValid && isDetailsValid && apiKeyStore.hasKey }
+    private var canRun: Bool { isTemplateValid && isDetailsValid && apiKeyStore.hasKey && isDataApproved }
     
     var body: some View {
         VStack(spacing: 16) {
@@ -42,6 +44,7 @@ struct MainView: View {
                     isValid: isTemplateValid,
                     path: $templatePath,
                     onDropURLs: { urls in
+                        isDataApproved = false
                         if let url = urls.first { templatePath = url.path }
                         scanPlaceholders()
                     }
@@ -52,6 +55,7 @@ struct MainView: View {
                     isValid: isDetailsValid,
                     path: $detailsPath,
                     onDropURLs: { urls in
+                        isDataApproved = false
                         if let url = urls.first { detailsPath = url.path }
                         extractDetails()
                     }
@@ -71,6 +75,7 @@ struct MainView: View {
                         keys: keys
                     ) { updated in
                         self.details = updated
+                        isDataApproved = true
                     }
                 } else {
                     EmptyCompanyDetailsPlaceholder()
@@ -203,11 +208,11 @@ struct MainView: View {
                 // симуляция
                 try await Task.sleep(nanoseconds: 2_200_000_000)
                 
-                //MARK: valid test data
-                //                let reqs = CompanyDetails(companyName: "Тест компания", legalForm: "ТЕСТ_ЗАО", ceoFullName: "Тест Тестович Тестов", ceoShortenName: "Тестов Т. Т.", ogrn: "1187746707280", inn: "9731007287", kpp: "773101001", email: "test_test@test.com")
+                // MARK: valid test data
+                                let reqs = CompanyDetails(companyName: "Тест компания", legalForm: "ТЕСТ_ЗАО", ceoFullName: "Тест Тестович Тестов", ceoShortenName: "Тестов Т. Т.", ogrn: "1187746707280", inn: "9731007287", kpp: "773101001", email: "test_test@test.com", address: "Город, ул. Улица, д. 8")
                 
                 //MARK: invalid test data
-                let reqs = CompanyDetails(companyName: "Тест компания", legalForm: "ТЕСТ_ЗАО", ceoFullName: "Тест Тестович Тестов", ceoShortenName: "Тестов Т. Т.", ogrn: "11877467072801", inn: "97310107287", kpp: "7731010101", email: "test_test@test.com", address: "Город, ул. Улица, д. 8")
+//                let reqs = CompanyDetails(companyName: "Тест компания", legalForm: "ТЕСТ_ЗАО", ceoFullName: "Тест Тестович Тестов", ceoShortenName: "Тестов Т. Т.", ogrn: "11877467072801", inn: "97310107287", kpp: "7731010101", email: "test_test@test.com", address: "Город, ул. Улица, д. 8")
                 
                 let dtoText = reqs.toMultilineString()
                 details = reqs
