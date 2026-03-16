@@ -38,6 +38,7 @@ struct CompanyDetailsFormView: View {
             wrappedValue: CompanyDetailsModel(
                 companyDetails: companyDetails,
                 metadata: metadata,
+                keys: keys,
                 validator: validator,
                 dadata: client
             )

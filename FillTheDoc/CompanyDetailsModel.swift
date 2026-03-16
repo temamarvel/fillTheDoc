@@ -25,11 +25,12 @@ final class CompanyDetailsModel: ObservableObject {
     init(
         companyDetails: CompanyDetails,
         metadata: [Key: FieldMetadata],
+        keys: [Key],
         validator: Validator,
         dadata: DaDataClient
     ) {
         self.metadata = metadata
-        self.allFieldKeys = Key.allCases
+        self.allFieldKeys = keys
         self.validator = validator
         self.dadata = dadata
         self.fields = Self.createFields(companyDetails: companyDetails, allFieldKeys: allFieldKeys)
