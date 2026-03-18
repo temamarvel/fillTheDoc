@@ -21,13 +21,13 @@ struct CompanyDetailsFormView: View {
     
     @FocusState private var focusedKey: Key?
     
-    let onApply: (CompanyDetails) -> Void
+    let onApply: (DocumentData) -> Void
     
     init(
         companyDetails: CompanyDetails,
         metadata: [Key: FieldMetadata],
         keys: [Key],
-        onApply: @escaping (CompanyDetails) -> Void
+        onApply: @escaping (DocumentData) -> Void
     ) {
         let token = Bundle.main.infoDictionary?["DADATA_TOKEN"] as? String ?? "N_T"
         let client = DaDataClient(configuration: .init(token: token))
@@ -169,7 +169,8 @@ struct CompanyDetailsFormView: View {
                 Button("Применить") {
                     do {
                         let dto = try model.buildResult()
-                        onApply(dto)
+                        let result = DocumentData(discount: discount, minDiscount: minDiscount, companyDetails: dto)
+                        onApply(result)
                     } catch {
                         errorText = error.localizedDescription
                         showErrorAlert = true
@@ -259,6 +260,7 @@ struct CompanyDetailsFormView: View {
 }
 
 private struct PreviewWrapper: View {
+    @State private var result: DocumentData? = nil
     @State private var requisites = CompanyDetails(
         companyName: "ООО «Ромашка»",
         legalForm: "ООО",
@@ -277,7 +279,7 @@ private struct PreviewWrapper: View {
             metadata: CompanyDetails.fieldMetadata,
             keys: [.companyName, .legalForm, .ceoFullName, .ceoShortenName, .ogrn, .inn, .kpp, .email]
         ) { updated in
-            requisites = updated
+            result = updated
         }
         .frame(width: 600, height: 700)
         .padding()

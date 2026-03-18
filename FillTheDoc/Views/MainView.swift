@@ -13,6 +13,7 @@ struct MainView: View {
     
     @State private var detailsText: String? = nil
     @State private var details: CompanyDetails? = nil
+    @State private var documentData: DocumentData? = nil
     
     @State private var isLoading: Bool = false
     
@@ -74,7 +75,8 @@ struct MainView: View {
                         metadata: CompanyDetails.fieldMetadata,
                         keys: keys
                     ) { updated in
-                        self.details = updated
+                        self.details = updated.companyDetails
+                        self.documentData = updated
                         isDataApproved = true
                     }
                 } else {
@@ -239,7 +241,7 @@ struct MainView: View {
         defer { isLoading = false  }
         
         do {
-            let values = details?.asDictionary() as? [String: String]
+            let values = documentData?.asDictionary() as? [String: String]
             
             guard let values = values else {
                 return
