@@ -14,6 +14,7 @@ struct MainView: View {
     @State private var detailsText: String? = nil
     @State private var details: CompanyDetails? = nil
     @State private var documentData: DocumentData? = nil
+    @State private var detailsToCopy: String? = nil
     
     @State private var isLoading: Bool = false
     
@@ -57,6 +58,7 @@ struct MainView: View {
                     path: $detailsPath,
                     onDropURLs: { urls in
                         isDataApproved = false
+                        details = nil
                         if let url = urls.first { detailsPath = url.path }
                         extractDetails()
                     }
