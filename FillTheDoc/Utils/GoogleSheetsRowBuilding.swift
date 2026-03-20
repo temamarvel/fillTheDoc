@@ -24,7 +24,7 @@ final class GoogleSheetsRowBuilder: GoogleSheetsRowBuilding {
             "",                                           // Телефон компании
             sanitize(data.companyDetails?.email),         // E-mail Компании
             "",                                           // Номер договора
-            "",                                           // Дата договора
+            sanitize(data.getDate()),                     // Дата договора
             "",                                           // Расч.счет
             sanitize(data.discount),                      // %
             sanitize(data.minDiscount),                   // Min
