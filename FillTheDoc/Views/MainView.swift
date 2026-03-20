@@ -235,7 +235,7 @@ struct MainView: View {
                 // MARK: valid test data
                 var reqs = CompanyDetails(companyName: "Тест компания", legalForm: LegalForm.parse("ЗАО"), ceoFullName: "Тест Тестович Тестов", ceoShortenName: "Тестов Т. Т.", ogrn: "1187746707280", inn: "9731007287", kpp: "773101001", email: "test_test@test.com", address: """
                                           город Москва, ул Горбунова, д. 2 стр. 3
-                                          """)
+                                          """, phone: "+79991234567")
                 
                 let token = Bundle.main.infoDictionary?["DADATA_TOKEN"] as? String ?? "N_T"
                 let client = DaDataClient(configuration: .init(token: token))
@@ -252,7 +252,8 @@ struct MainView: View {
                             inn: reqs.inn,
                             kpp: reqs.kpp,
                             email: reqs.email,
-                            address: na
+                            address: na,
+                            phone: reqs.phone
                         )
                         
                         reqs = updated

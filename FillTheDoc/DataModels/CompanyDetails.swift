@@ -137,6 +137,7 @@ public struct CompanyDetails: Decodable, LLMExtractable, Sendable {
     public let email: String?
     public let address: String?
     public let ceoRole: String?
+    public let phone: String?
     
     public init(
         companyName: String?,
@@ -147,7 +148,8 @@ public struct CompanyDetails: Decodable, LLMExtractable, Sendable {
         inn: String?,
         kpp: String?,
         email: String?,
-        address: String?
+        address: String?,
+        phone: String?
     ) {
         self.companyName = companyName
         self.legalForm = legalForm
@@ -159,6 +161,7 @@ public struct CompanyDetails: Decodable, LLMExtractable, Sendable {
         self.email = email
         self.address = address
         self.ceoRole = legalForm == .ip ? "Индивидуальный предприниматель" : "Генеральный директор"
+        self.phone = phone
     }
     
     public enum CodingKeys: String, CodingKey, CaseIterable {
@@ -172,6 +175,7 @@ public struct CompanyDetails: Decodable, LLMExtractable, Sendable {
         case email
         case address
         case ceoRole = "ceo_role"
+        case phone
     }
     
     public init(from decoder: Decoder) throws {
@@ -185,6 +189,7 @@ public struct CompanyDetails: Decodable, LLMExtractable, Sendable {
         self.kpp = try container.decodeIfPresent(String.self, forKey: .kpp)
         self.email = try container.decodeIfPresent(String.self, forKey: .email)
         self.address = try container.decodeIfPresent(String.self, forKey: .address)
+        self.phone = try container.decodeIfPresent(String.self, forKey: .phone)
         
         if let rawLegalForm = try container.decodeIfPresent(String.self, forKey: .legalForm) {
             self.legalForm = LegalForm.parse(rawLegalForm)
@@ -237,6 +242,8 @@ public extension CompanyDetails {
                 return address
             case .ceoRole:
                 return ceoRole
+            case .phone:
+                return phone
         }
     }
     
@@ -262,6 +269,8 @@ public extension CompanyDetails {
                 return address
             case .ceoRole:
                 return ceoRole
+            case .phone:
+                return phone
         }
     }
     

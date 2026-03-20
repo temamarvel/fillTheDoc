@@ -132,6 +132,18 @@ extension CompanyDetails {
             placeholder: "город, улица, дом",
             normalizer: FieldRules.trim,
             validator: { _ in FieldValidationResult(.pass, "адрес ок") }
+        ),
+        .ceoRole : .init(
+            title: "Должность",
+            placeholder: "Генеральный директор / Индивидуальный предприниматель",
+            normalizer: FieldRules.trim,
+            validator: { _ in FieldValidationResult(.pass, "Должность ок") }
+        ),
+        .phone : .init(
+            title: "Телефон",
+            placeholder: "+79991234567",
+            normalizer: FieldRules.trim,
+            validator: { _ in FieldValidationResult(.pass, "Телефон ок") }
         )
     ]
 }

@@ -21,7 +21,7 @@ final class GoogleSheetsRowBuilder: GoogleSheetsRowBuilding {
             sanitize(data.companyDetails?.fullCompanyName),   // Наименование
             sanitize(data.companyDetails?.ceoFullName),   // ФИО
             sanitize(data.companyDetails?.inn),           // ИНН
-            "",                                           // Телефон компании
+            sanitize(data.companyDetails?.phone),         // Телефон компании
             sanitize(data.companyDetails?.email),         // E-mail Компании
             "",                                           // Номер договора
             sanitize(data.getDate()),                     // Дата договора

@@ -270,7 +270,8 @@ private struct PreviewWrapper: View {
         inn: "7701234567",
         kpp: "770101001",
         email: "info@romashka.ru",
-        address: "ТЕСТ Адрес"
+        address: "ТЕСТ Адрес",
+        phone: "+79991234567"
     )
     
     var body: some View {

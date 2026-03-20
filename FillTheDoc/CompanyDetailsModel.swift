@@ -104,7 +104,8 @@ final class CompanyDetailsModel: ObservableObject {
             inn: present(value(for: .inn)),
             kpp: present(value(for: .kpp)),
             email: present(value(for: .email)),
-            address: present(value(for: .address))
+            address: present(value(for: .address)),
+            phone: present(value(for: .phone))
         )
     }
     
