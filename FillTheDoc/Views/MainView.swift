@@ -15,9 +15,10 @@ struct MainView: View {
     @State private var details: CompanyDetails? = nil
     @State private var documentData: DocumentData? = nil
     
-    @State private var googleSheetsRow: String = ""
-    private var googleSheetsPreviewRow: String {
-        googleSheetsRow
+    @State private var googleSheetsRow: String? = nil
+    private var googleSheetsPreviewRow: String? {
+        guard let googleSheetsRow = googleSheetsRow else { return nil}
+        return googleSheetsRow
             .replacingOccurrences(of: "\t", with: " | ")
     }
     @State private var googleSheetsCopyStatus: String? = nil
@@ -67,6 +68,7 @@ struct MainView: View {
                     onDropURLs: { urls in
                         isDataApproved = false
                         details = nil
+                        googleSheetsRow = nil
                         if let url = urls.first { detailsPath = url.path }
                         extractDetails()
                     }
@@ -75,9 +77,9 @@ struct MainView: View {
 
             
             Group {
-                if !googleSheetsRow.isEmpty {
+                if let googleSheetsRow = googleSheetsRow, !googleSheetsRow.isEmpty {
                     GoogleSheetsRowPreview(
-                        row: googleSheetsPreviewRow,
+                        row: googleSheetsPreviewRow ?? "",
                         status: googleSheetsCopyStatus
                     ) {
                         googleSheetsRowBuilder.copyToPasteboard(googleSheetsRow)
