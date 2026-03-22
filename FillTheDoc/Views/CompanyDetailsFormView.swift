@@ -92,7 +92,7 @@ struct CompanyDetailsFormView: View {
                         }
                     }
                 } label: {
-                    Text("Discount")
+                    Text("Коммисия, %")
                 }
                 .padding(4)
                 .background {
@@ -128,7 +128,7 @@ struct CompanyDetailsFormView: View {
                         }
                     }
                 } label: {
-                    Text("Min Discount")
+                    Text("Мин. коммиссия, руб.")
                 }.padding(4)
                     .background {
                         ZStack{
@@ -169,7 +169,7 @@ struct CompanyDetailsFormView: View {
                 Button("Применить") {
                     do {
                         let dto = try model.buildResult()
-                        let result = DocumentData(discount: discount, minDiscount: minDiscount, companyDetails: dto)
+                        let result = DocumentData(fee: discount, minFee: minDiscount, companyDetails: dto)
                         onApply(result)
                     } catch {
                         errorText = error.localizedDescription

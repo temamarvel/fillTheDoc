@@ -8,8 +8,8 @@
 import Foundation
 
 public struct DocumentData: Codable {
-    let discount: String?
-    let minDiscount: String?
+    let fee: String?
+    let minFee: String?
     let companyDetails: CompanyDetails?
     
     func getDate() -> String? {
@@ -25,12 +25,12 @@ public struct DocumentData: Codable {
         
         var dict = companyDetails?.asDictionary() as? [String: String] ?? [:]
         
-        if let discount = discount {
-            dict["discount"] = discount
+        if let fee = fee {
+            dict["fee"] = fee
         }
         
-        if let minDiscount = minDiscount {
-            dict["min_discount"] = minDiscount
+        if let minFee = minFee {
+            dict["min_fee"] = minFee
         }
         
         let formatter = DateFormatter()

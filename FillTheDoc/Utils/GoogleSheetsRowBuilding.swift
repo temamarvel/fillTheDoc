@@ -26,8 +26,8 @@ final class GoogleSheetsRowBuilder: GoogleSheetsRowBuilding {
             "",                                           // Номер договора
             sanitize(data.getDate()),                     // Дата договора
             "",                                           // Расч.счет
-            sanitize(data.discount),                      // %
-            sanitize(data.minDiscount),                   // Min
+            sanitize(data.fee),                      // %
+            sanitize(data.minFee),                   // Min
             "",                                           // Прямые выплаты
             "",                                           // МП. Карты
             ""                                            // МП. СБП
