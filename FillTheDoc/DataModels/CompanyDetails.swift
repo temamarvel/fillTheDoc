@@ -197,7 +197,7 @@ public struct CompanyDetails: Decodable, LLMExtractable, Sendable {
             self.legalForm = nil
         }
         
-        self.ceoRole = try container.decodeIfPresent(String.self, forKey: .ceoRole)
+        self.ceoRole = legalForm == .ip ? "Индивидуальный предприниматель" : "Генеральный директор"
     }
 }
 
