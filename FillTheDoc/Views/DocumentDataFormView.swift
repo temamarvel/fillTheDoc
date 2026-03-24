@@ -77,87 +77,10 @@ struct DocumentDataFormView: View {
     
     var body: some View {
         VStack{
-//            HStack{
-//                LabeledContent {
-//                    VStack(alignment: .trailing){
-//                        TextField("10%", text: $discount)
-//                            .multilineTextAlignment(.trailing)
-//                            .textFieldStyle(.plain)
-//                        
-//                        if let discountError = discountError {
-//                            Text(discountError)
-//                                .font(.caption)
-//                                .foregroundStyle(.red)
-//                                .transition(.opacity.combined(with: .move(edge: .top)))
-//                        }
-//                    }
-//                } label: {
-//                    Text("Коммисия, %")
-//                }
-//                .padding(4)
-//                .background {
-//                    ZStack{
-//                        Rectangle().fill(.ultraThinMaterial)
-//                        
-//                        if discountError != nil {
-//                            LinearGradient(
-//                                colors: [
-//                                    .clear,
-//                                    .red.opacity(0.10),
-//                                    .red.opacity(0.22)
-//                                ],
-//                                startPoint: .leading,
-//                                endPoint: .trailing
-//                            )
-//                        }
-//                    }
-//                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-//                }
-//                
-//                LabeledContent {
-//                    VStack(alignment: .trailing){
-//                        TextField("10 руб", text: $minDiscount)
-//                            .multilineTextAlignment(.trailing)
-//                            .textFieldStyle(.plain)
-//                        
-//                        if let minDiscountError = minDiscountError {
-//                            Text(minDiscountError)
-//                                .font(.caption)
-//                                .foregroundStyle(.red)
-//                                .transition(.opacity.combined(with: .move(edge: .top)))
-//                        }
-//                    }
-//                } label: {
-//                    Text("Мин. коммиссия, руб.")
-//                }.padding(4)
-//                    .background {
-//                        ZStack{
-//                            Rectangle().fill(.ultraThinMaterial)
-//                            
-//                            if minDiscountError != nil {
-//                                LinearGradient(
-//                                    colors: [
-//                                        .clear,
-//                                        .red.opacity(0.10),
-//                                        .red.opacity(0.22)
-//                                    ],
-//                                    startPoint: .leading,
-//                                    endPoint: .trailing
-//                                )
-//                            }
-//                        }
-//                        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-//                    }
-//            }
-
-            
-            Divider()
-            
             Form {
-                
                 Section("Комиссия"){
                     DocumentDataRowView(title: "Комиссия, %", placeholder: "10", text: $fee, errorColor: .red, errorText: feeError, focusedKey: $focusedKey, key: .address)
-
+                    
                     DocumentDataRowView(title: "Мин. комиссия, руб", placeholder: "10", text: $minFee, errorColor: .red, errorText: minFeeError, focusedKey: $focusedKey, key: .address)
                 }
                 
