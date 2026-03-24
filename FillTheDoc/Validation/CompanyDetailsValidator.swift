@@ -83,7 +83,7 @@ public final class CompanyDetailsValidator: Sendable {
         //TODO FieldMessage same logic as ValidationResult
         return validationResult.state == .pass ? nil : FieldMessage(error: validationResult.text, warning: nil)
     }
-
+    
     public func validateFieldsWithReference(fields: [Key: FieldState]) async -> [Key: FieldState] {
         //fields have to be normalized and not null before validation
         
@@ -200,7 +200,7 @@ public final class CompanyDetailsValidator: Sendable {
                 return nil
                 
                 // сейчас не кросс-валидируем
-            case .legalForm, .ceoShortenName, .email, .ceoRole, .phone:
+            case .legalForm, .ceoShortenName, .email, .phone:
                 return nil
                 // TODO: address
             case .address:
@@ -217,7 +217,7 @@ public final class CompanyDetailsValidator: Sendable {
                 return nil
         }
     }
-
+    
     private func present(_ s: String?) -> String? {
         guard let s else { return nil }
         let t = s.trimmingCharacters(in: .whitespacesAndNewlines)

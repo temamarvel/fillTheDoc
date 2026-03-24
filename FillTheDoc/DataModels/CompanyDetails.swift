@@ -136,7 +136,6 @@ public struct CompanyDetails: Decodable, LLMExtractable, Sendable {
     public let kpp: String?
     public let email: String?
     public let address: String?
-    public let ceoRole: String?
     public let phone: String?
     
     public init(
@@ -160,7 +159,6 @@ public struct CompanyDetails: Decodable, LLMExtractable, Sendable {
         self.kpp = kpp
         self.email = email
         self.address = address
-        self.ceoRole = legalForm == .ip ? "Индивидуальный предприниматель" : "Генеральный директор"
         self.phone = phone
     }
     
@@ -174,7 +172,6 @@ public struct CompanyDetails: Decodable, LLMExtractable, Sendable {
         case kpp
         case email
         case address
-        case ceoRole = "ceo_role"
         case phone
     }
     
@@ -196,8 +193,6 @@ public struct CompanyDetails: Decodable, LLMExtractable, Sendable {
         } else {
             self.legalForm = nil
         }
-        
-        self.ceoRole = legalForm == .ip ? "Индивидуальный предприниматель" : "Генеральный директор"
     }
 }
 
@@ -240,8 +235,6 @@ public extension CompanyDetails {
                 return email
             case .address:
                 return address
-            case .ceoRole:
-                return ceoRole
             case .phone:
                 return phone
         }
@@ -267,8 +260,6 @@ public extension CompanyDetails {
                 return email
             case .address:
                 return address
-            case .ceoRole:
-                return ceoRole
             case .phone:
                 return phone
         }

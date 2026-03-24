@@ -16,23 +16,23 @@ struct FieldMetadata {
 }
 
 enum FieldRules {
-
+    
     // MARK: - Normalizers
-
+    
     nonisolated static func trim(_ s: String) -> String {
         s.trimmingCharacters(in: .whitespacesAndNewlines)
     }
-
+    
     nonisolated static func digitsOnly(_ s: String) -> String {
         String(s.unicodeScalars.filter { CharacterSet.decimalDigits.contains($0) })
     }
-
+    
     nonisolated static func lowercased(_ s: String) -> String {
         trim(s).lowercased()
     }
-
+    
     // MARK: - Validators
-
+    
     nonisolated static func optional(_ validate: @escaping (String) -> String?) -> (String) -> String? {
         { raw in
             let v = trim(raw)
@@ -40,7 +40,7 @@ enum FieldRules {
             return validate(v)
         }
     }
-
+    
     static func lengthIn(_ allowed: Set<Int>, label: String) -> (String) -> String? {
         { value in
             guard allowed.contains(value.count) else {
@@ -50,14 +50,14 @@ enum FieldRules {
             return nil
         }
     }
-
+    
     static func email() -> (String) -> String? {
         { value in
             // NSDataDetector на macOS работает нормально, быстрее и надёжнее большинства regex.
             let range = NSRange(value.startIndex..<value.endIndex, in: value)
             let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
             let matches = detector?.matches(in: value, options: [], range: range) ?? []
-
+            
             let ok = matches.contains { m in
                 guard m.resultType == .link, let url = m.url else { return false }
                 return url.scheme == "mailto" && m.range.length == range.length
@@ -65,7 +65,7 @@ enum FieldRules {
             return ok ? nil : "Некорректный email"
         }
     }
-
+    
     static func legalForm() -> (String) -> String? {
         { value in
             let allowed: Set<String> = ["ООО","ИП","АО","ПАО","НКО","ГУП","МУП"]
@@ -132,12 +132,6 @@ extension CompanyDetails {
             placeholder: "город, улица, дом",
             normalizer: FieldRules.trim,
             validator: { _ in FieldValidationResult(.pass, "адрес ок") }
-        ),
-        .ceoRole : .init(
-            title: "Должность",
-            placeholder: "Генеральный директор / Индивидуальный предприниматель",
-            normalizer: FieldRules.trim,
-            validator: { _ in FieldValidationResult(.pass, "Должность ок") }
         ),
         .phone : .init(
             title: "Телефон",
