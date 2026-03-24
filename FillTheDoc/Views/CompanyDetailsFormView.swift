@@ -151,7 +151,7 @@ struct CompanyDetailsFormView: View {
             }
             .animation(.easeInOut(duration: 0.15), value: discountError)
             .animation(.easeInOut(duration: 0.15), value: minDiscountError)
-                
+            
             Divider()
             
             Form {
@@ -198,40 +198,18 @@ struct CompanyDetailsFormView: View {
     
     @ViewBuilder
     private func fieldRow(key: CompanyDetailsModel.Key, state: FieldState) -> some View {
-        
         let message = state.message
         let color = messageColor(for: message)
         
-        HStack(alignment: .firstTextBaseline) {
-            Text(model.title(for: key))
-            
-            VStack(alignment: .trailing) {
-                TextField("", text: binding(for: key), prompt: Text(model.placeholder(for: key)))
-                    .focused($focusedKey, equals: key)
-                
-                
-                if let message = message?.text {
-                    Text(message)
-                        .font(.caption)
-                        .foregroundStyle(color)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-            }
-            .background {
-                if message?.severity != nil {
-                    LinearGradient(
-                        colors: [
-                            .clear,
-                            color.opacity(0.10),
-                            color.opacity(0.22)
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                }
-            }
-            .animation(.easeInOut(duration: 0.25), value: model.hasErrors)
-        }
+        CompanyDetailsFieldRowView(
+            title: model.title(for: key),
+            placeholder: model.placeholder(for: key),
+            text: binding(for: key),
+            errorColor: color,
+            errorText: message?.text,
+            focusedKey: $focusedKey,
+            key: key
+        )
     }
     
     // MARK: - Binding
@@ -284,5 +262,46 @@ private struct PreviewWrapper: View {
         }
         .frame(width: 600, height: 700)
         .padding()
+    }
+}
+
+private struct CompanyDetailsFieldRowView<Key: Hashable>: View {
+    let title: String
+    let placeholder: String
+    @Binding var text: String
+    let errorColor: Color
+    let errorText: String?
+    @FocusState.Binding var focusedKey: Key?
+    let key: Key
+    
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title)
+            
+            VStack(alignment: .trailing) {
+                TextField("", text: $text, prompt: Text(placeholder))
+                    .focused($focusedKey, equals: key)
+                
+                if let errorText {
+                    Text(errorText)
+                        .font(.caption)
+                        .foregroundStyle(errorColor)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+            .background {
+                if errorText != nil {
+                    LinearGradient(
+                        colors: [
+                            .clear,
+                            errorColor.opacity(0.10),
+                            errorColor.opacity(0.22)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                }
+            }
+        }
     }
 }
