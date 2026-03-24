@@ -78,7 +78,7 @@ struct MainView: View {
             
             Group {
                 if let googleSheetsRow = googleSheetsRow, !googleSheetsRow.isEmpty {
-                    GoogleSheetsRowPreview(
+                    GoogleSheetsRowPreviewView(
                         row: googleSheetsPreviewRow ?? "",
                         status: googleSheetsCopyStatus
                     ) {
@@ -103,7 +103,7 @@ struct MainView: View {
                             isDataApproved = true
                         }
                     } else {
-                        EmptyCompanyDetailsPlaceholder()
+                        EmptyCompanyDetailsPlaceholderView()
                     }
                 }
             }

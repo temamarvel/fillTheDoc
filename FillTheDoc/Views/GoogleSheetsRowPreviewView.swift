@@ -8,7 +8,7 @@
 import SwiftUI
 
 
-struct GoogleSheetsRowPreview: View {
+struct GoogleSheetsRowPreviewView: View {
     let row: String
     let status: String?
     let onCopy: () -> Void
