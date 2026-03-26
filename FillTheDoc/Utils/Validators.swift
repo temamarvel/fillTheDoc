@@ -112,7 +112,7 @@ nonisolated enum Validators {
     
     /// Валидирует правовую форму компании.
     static func legalForm(_ value: String) -> String? {
-        let allowed: Set<String> = ["ООО","ИП","АО","ПАО","НКО","ГУП","МУП"]
+        let allowed: Set<String> = ["ЗАО", "ООО", "ИП", "АО", "ПАО", "НКО", "ГУП", "МУП"]
         return allowed.contains(value) ? nil : "Допустимые значения: \(allowed.sorted().joined(separator: ", "))"
     }
     
