@@ -192,9 +192,9 @@ struct MainView: View {
                 
                 //TODO: real request to openai
                 
-                //let companyDetails = try await realOpenAICall(extractedDetails: extractedDetails)
+                let companyDetails = try await realOpenAICall(extractedDetails: extractedDetails)
                 
-                let companyDetails = try await fakeOpenAICall(extractedDetails: extractedDetails)
+                //let companyDetails = try await fakeOpenAICall(extractedDetails: extractedDetails)
                 
                 let dtoText = companyDetails.toMultilineString()
                 details = companyDetails
