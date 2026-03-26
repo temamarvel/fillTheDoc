@@ -322,7 +322,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.6;
-				MARKETING_VERSION = "1.1-beta";
+				MARKETING_VERSION = "1.2-beta";
 				PRODUCT_BUNDLE_IDENTIFIER = tema.marvel.work.FillTheDoc;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -370,7 +370,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.6;
-				MARKETING_VERSION = "1.1-beta";
+				MARKETING_VERSION = "1.2-beta";
 				PRODUCT_BUNDLE_IDENTIFIER = tema.marvel.work.FillTheDoc;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
