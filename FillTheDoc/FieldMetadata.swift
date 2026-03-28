@@ -20,7 +20,7 @@ extension CompanyDetails {
         .companyName: .init(
             title: "Название",
             placeholder: "ООО «Ромашка»",
-            normalizer: Normalizers.trimmed,
+            normalizer: { $0.trimmed },
             validator: Validators.nonEmpty
         ),
         .inn: .init(
@@ -44,13 +44,13 @@ extension CompanyDetails {
         .ceoFullName: .init(
             title: "Руководитель",
             placeholder: "Иванов Иван Иванович",
-            normalizer: Normalizers.trimmed,
+            normalizer: { $0.trimmed },
             validator: Validators.fullName
         ),
         .ceoShortenName: .init(
             title: "Руководитель (кратко)",
             placeholder: "Иванов И.И.",
-            normalizer: Normalizers.trimmed,
+            normalizer: { $0.trimmed },
             validator: Validators.shortenName
         ),
         .legalForm: .init(
@@ -62,13 +62,13 @@ extension CompanyDetails {
         .email: .init(
             title: "Email",
             placeholder: "example@domain.com",
-            normalizer: Normalizers.trimmed,
+            normalizer: { $0.trimmed },
             validator: { v in Validators.email(v).map { .error($0) } }
         ),
         .address: .init(
             title: "Адрес",
             placeholder: "город, улица, дом",
-            normalizer: Normalizers.trimmed,
+            normalizer: { $0.trimmed },
             validator: Validators.address
         ),
         .phone: .init(

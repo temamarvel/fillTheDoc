@@ -11,38 +11,11 @@ import Foundation
 /// Структурированы по уровню: базовые, комбинированные, специализированные.
 nonisolated enum Normalizers {
     
-    // MARK: - Basic normalizers (использованы в других)
-    
-    /// Обрезает пробелы с краёв строки.
-    static func trim(_ s: String) -> String {
-        s.trimmed
-    }
-    
-    /// Оставляет только цифры.
-    static func digitsOnly(_ s: String) -> String {
-        s.digitsOnly
-    }
-    
-    /// Заменяет символы переноса на пробел (для TSV).
-    static func sanitizeForTSV(_ s: String) -> String {
-        s.sanitizedForTSV
-    }
-    
-    // MARK: - Combined normalizers (часто используются вместе)
-    
-    /// Обрезает пробелы.
-    static func trimmed(_ s: String) -> String {
-        trim(s)
-    }
+    // MARK: - Combined normalizers
     
     /// Обрезает пробелы и оставляет только цифры.
     static func trimmedDigitsOnly(_ s: String) -> String {
-        trim(s).digitsOnly
-    }
-    
-    /// Обрезает и переводит в нижний регистр.
-    static func trimmedLowercased(_ s: String) -> String {
-        trim(s).lowercased()
+        s.trimmed.digitsOnly
     }
     
     // MARK: - Specialized normalizers
