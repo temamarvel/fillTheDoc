@@ -9,7 +9,7 @@ import Foundation
 
 /// Централизованное место для всех нормализаторов полей.
 /// Структурированы по уровню: базовые, комбинированные, специализированные.
-nonisolated enum Normalizers {
+enum Normalizers {
     
     // MARK: - Combined normalizers
     

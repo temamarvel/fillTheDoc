@@ -55,7 +55,7 @@ public final class DocxTemplatePlaceholderScanner: Sendable {
     
     // MARK: - Public API
     
-    public nonisolated func scan(
+    public func scan(
         template: URL,
         options: Options = .init()
     ) async throws -> Report {
@@ -103,7 +103,7 @@ public final class DocxTemplatePlaceholderScanner: Sendable {
         return report
     }
     
-    public nonisolated func scanKeys(
+    public func scanKeys(
         template: URL,
         options: Options = .init()
     ) async throws -> [String] {
@@ -116,6 +116,8 @@ public final class DocxTemplatePlaceholderScanner: Sendable {
     private struct PartScanResult {
         var foundKeys: [String] = []
         var occurrences: [String: Int] = [:]
+        
+        init() {}
     }
     
     private func scanDocument(_ document: XMLDocument, options: Options) -> PartScanResult {

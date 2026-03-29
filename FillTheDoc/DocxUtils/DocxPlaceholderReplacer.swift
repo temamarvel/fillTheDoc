@@ -77,7 +77,7 @@ public final class DocxPlaceholderReplacer: Sendable {
     public init() {}
     
     /// Replaces placeholders like `<!company_name!>` in a DOCX template.
-    public nonisolated func fill(
+    public func fill(
         template: URL,
         output: URL,
         values: [String: String],
@@ -152,11 +152,11 @@ public final class DocxPlaceholderReplacer: Sendable {
     
     // MARK: - Sanitization
     
-    private nonisolated func sanitizeValuesDictionary(_ values: [String: String]) -> [String: String] {
+    private func sanitizeValuesDictionary(_ values: [String: String]) -> [String: String] {
         values.mapValues { sanitizeValue($0) }
     }
     
-    private nonisolated func sanitizeValue(_ value: String) -> String {
+    private func sanitizeValue(_ value: String) -> String {
         var sanitized = value
         sanitized = sanitized.replacingOccurrences(of: "<!", with: "&lt;!")
         sanitized = sanitized.replacingOccurrences(of: "!>", with: "!&gt;")
@@ -171,9 +171,11 @@ private struct PartReport {
     var replacedKeys: Set<String> = []
     var missingKeys: Set<String> = []
     var replacementsCount: Int = 0
+    
+    init() {}
 }
 
-private nonisolated func replaceInPartXML(
+private func replaceInPartXML(
     partURL: URL,
     values: [String: String],
     options: DocxPlaceholderReplacer.Options,
@@ -272,12 +274,12 @@ private struct WordprocessingMLRewriter {
         return (part, changed)
     }
     
-    // MARK: Offset mapping
-    
     private struct SegmentLocation {
         let segmentIndex: Int
         let offset: Int
     }
+    
+    // MARK: Offset mapping
     
     private func prefixSums(_ lengths: [Int]) -> [Int] {
         var out: [Int] = Array(repeating: 0, count: lengths.count + 1)

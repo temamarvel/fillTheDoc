@@ -20,7 +20,7 @@ public actor CompanyDetailsValidator {
         public var preferRemoteOnTie: Bool
         public var combineTextsOnTie: Bool
         
-        public nonisolated init(
+        public init(
             nameSimilarityThreshold: Double = 0.72,
             addressSimilarityThreshold: Double = 0.55,
             preferRemoteOnTie: Bool = false,

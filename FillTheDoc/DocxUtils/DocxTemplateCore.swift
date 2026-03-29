@@ -13,7 +13,7 @@ import ZIPFoundation
 
 enum PlaceholderPattern {
     /// Matches `<!key!>` where key = [A-Za-z0-9_]+
-    nonisolated static let regex: NSRegularExpression = {
+    static let regex: NSRegularExpression = {
         let pattern = #"<\!([A-Za-z0-9_]+)\!>"#
         return try! NSRegularExpression(pattern: pattern)
     }()
@@ -83,7 +83,7 @@ enum DocxTemplateError: Error, LocalizedError {
 // MARK: - XML text segment collection
 
 /// Collects `<w:t>` (and optionally `<w:instrText>`) segments from a paragraph element.
-nonisolated func collectTextSegments(in paragraph: XMLElement, includeFieldInstructionText: Bool) -> [TextSegment] {
+func collectTextSegments(in paragraph: XMLElement, includeFieldInstructionText: Bool) -> [TextSegment] {
     let path: String
     if includeFieldInstructionText {
         path = ".//*[local-name()='t' or local-name()='instrText']"
@@ -108,7 +108,7 @@ nonisolated func collectTextSegments(in paragraph: XMLElement, includeFieldInstr
 // MARK: - Placeholder search
 
 /// Finds all `<!key!>` placeholders in concatenated text.
-nonisolated func findPlaceholders(in text: String) -> [PlaceholderMatch] {
+func findPlaceholders(in text: String) -> [PlaceholderMatch] {
     let ns = text as NSString
     let matches = PlaceholderPattern.regex.matches(
         in: text,
@@ -125,7 +125,7 @@ nonisolated func findPlaceholders(in text: String) -> [PlaceholderMatch] {
 // MARK: - XML parsing
 
 /// Parses XML data into an XMLDocument with whitespace-preserving options.
-nonisolated func parseXMLDocument(data: Data, partPath: String) throws -> XMLDocument {
+func parseXMLDocument(data: Data, partPath: String) throws -> XMLDocument {
     do {
         return try XMLDocument(data: data, options: [.nodePreserveAll, .nodePreserveWhitespace])
     } catch {
@@ -134,14 +134,14 @@ nonisolated func parseXMLDocument(data: Data, partPath: String) throws -> XMLDoc
 }
 
 /// Returns all `<w:p>` paragraph elements from an XML document.
-nonisolated func findParagraphs(in document: XMLDocument) -> [XMLElement] {
+func findParagraphs(in document: XMLDocument) -> [XMLElement] {
     (try? document.nodes(forXPath: "//*[local-name()='p']") as? [XMLElement]) ?? []
 }
 
 // MARK: - Part location (from archive paths)
 
 /// Locates DOCX XML part paths inside a ZIP archive based on options.
-nonisolated func locatePartPaths(in archive: Archive, options: DocxPartsOptions) -> [String] {
+func locatePartPaths(in archive: Archive, options: DocxPartsOptions) -> [String] {
     let allPaths = archive.map(\.path)
     
     switch options.selection {
@@ -195,7 +195,7 @@ nonisolated func locatePartPaths(in archive: Archive, options: DocxPartsOptions)
 }
 
 /// Locates DOCX XML part URLs on the filesystem (for extracted archives).
-nonisolated func locatePartURLs(root: URL, mainDoc: URL, options: DocxPartsOptions) throws -> [URL] {
+func locatePartURLs(root: URL, mainDoc: URL, options: DocxPartsOptions) throws -> [URL] {
     let fm = FileManager.default
     
     switch options.selection {
@@ -245,7 +245,7 @@ nonisolated func locatePartURLs(root: URL, mainDoc: URL, options: DocxPartsOptio
 // MARK: - ZIP helpers
 
 /// Extracts data from a single ZIP entry.
-nonisolated func extractEntryData(from entry: Entry, in archive: Archive) throws -> Data {
+func extractEntryData(from entry: Entry, in archive: Archive) throws -> Data {
     var data = Data()
     _ = try archive.extract(entry) { chunk in
         data.append(chunk)
@@ -256,7 +256,7 @@ nonisolated func extractEntryData(from entry: Entry, in archive: Archive) throws
 extension Archive {
     
     /// Safe extraction that prevents Zip Slip (path traversal).
-    nonisolated func extractAllSafely(to directory: URL) throws {
+    func extractAllSafely(to directory: URL) throws {
         let fm = FileManager.default
         let root = directory.standardizedFileURL.resolvingSymlinksInPath()
         
@@ -288,7 +288,7 @@ extension Archive {
     }
     
     /// Re-packs a directory into this archive.
-    nonisolated func addDirectoryContents(of directory: URL) throws {
+    func addDirectoryContents(of directory: URL) throws {
         let fm = FileManager.default
         let basePath = directory.path
         
@@ -309,7 +309,7 @@ extension Archive {
 }
 
 /// Returns relative path of an extracted file within the extraction root.
-nonisolated func relativeDocxPath(fromExtractedURL url: URL, extractedRoot: URL) -> String {
+func relativeDocxPath(fromExtractedURL url: URL, extractedRoot: URL) -> String {
     let base = extractedRoot.standardizedFileURL.path
     let p = url.standardizedFileURL.path
     if p.hasPrefix(base + "/") {
