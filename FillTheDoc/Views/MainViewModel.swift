@@ -123,7 +123,7 @@ final class MainViewModel {
         scanTask?.cancel()
         scanTask = Task {
             do {
-                let keys = try await Self.scanKeysInBackground(scanner: scanner, templateURL: templateURL)
+                let keys = try await scanner.scanKeys(template: templateURL)
                 try Task.checkCancellation()
                 self.templatePlaceholders = keys
             } catch is CancellationError {
@@ -151,7 +151,7 @@ final class MainViewModel {
             defer { Task { @MainActor [weak self] in self?.isLoading = false } }
             
             do {
-                let extractedDetails = try await Self.extractInBackground(service: extractorService, url: detailsURL)
+                let extractedDetails = try await extractorService.extract(from: detailsURL)
                 try Task.checkCancellation()
                 
                 let companyDetails = try await self.fakeOpenAICall(extractedDetails: extractedDetails)
@@ -181,18 +181,15 @@ final class MainViewModel {
             guard let values = documentData?.asDictionary() else { return }
             
             let tempOutURL = makeTempOutputURL(from: templateURL)
-            let replacer = self.replacer
             
-            let report = try await Self.fillInBackground(
-                replacer: replacer,
-                templateURL: templateURL,
-                outputURL: tempOutURL,
+            let report = try await replacer.fill(
+                template: templateURL,
+                output: tempOutURL,
                 values: values
             )
             
             exportDocument = try DocxFileDocument(fileURL: tempOutURL)
             exportDefaultFilename = "\(templateURL.deletingPathExtension().lastPathComponent)_filled"
-            
             showExporter = true
             
             if let documentData {
@@ -240,40 +237,6 @@ final class MainViewModel {
         let base = templateURL.deletingPathExtension().lastPathComponent
         let name = "\(base)_out_\(UUID().uuidString).docx"
         return FileManager.default.temporaryDirectory.appendingPathComponent(name)
-    }
-    
-    // MARK: - Background helpers (nonisolated — уходят с MainActor)
-    
-    /// Сканирует плейсхолдеры шаблона вне MainActor.
-    private nonisolated static func scanKeysInBackground(
-        scanner: DocxTemplatePlaceholderScanner,
-        templateURL: URL
-    ) async throws -> [String] {
-        try await Task.detached(priority: .userInitiated) {
-            try scanner.scanKeys(template: templateURL)
-        }.value
-    }
-    
-    /// Извлекает текст из файла вне MainActor.
-    private nonisolated static func extractInBackground(
-        service: DocumentTextExtractorService,
-        url: URL
-    ) async throws -> ExtractionResult {
-        try await Task.detached(priority: .userInitiated) {
-            try service.extract(from: url)
-        }.value
-    }
-    
-    /// Заполняет docx-шаблон вне MainActor.
-    private nonisolated static func fillInBackground(
-        replacer: DocxPlaceholderReplacer,
-        templateURL: URL,
-        outputURL: URL,
-        values: [String: String]
-    ) async throws -> DocxPlaceholderReplacer.Report {
-        try await Task.detached(priority: .userInitiated) {
-            try replacer.fill(template: templateURL, output: outputURL, values: values)
-        }.value
     }
     
     private func url(from path: String) -> URL? {

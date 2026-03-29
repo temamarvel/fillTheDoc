@@ -82,7 +82,7 @@ public final class DocxPlaceholderReplacer: Sendable {
         output: URL,
         values: [String: String],
         options: Options = .init()
-    ) throws -> Report {
+    ) async throws -> Report {
         let fm = FileManager.default
         
         if options.validateTemplate {

@@ -58,7 +58,7 @@ public final class DocxTemplatePlaceholderScanner: Sendable {
     public nonisolated func scan(
         template: URL,
         options: Options = .init()
-    ) throws -> Report {
+    ) async throws -> Report {
         let fm = FileManager.default
         
         if options.validateTemplate {
@@ -106,8 +106,9 @@ public final class DocxTemplatePlaceholderScanner: Sendable {
     public nonisolated func scanKeys(
         template: URL,
         options: Options = .init()
-    ) throws -> [String] {
-        try scan(template: template, options: options).orderedKeys
+    ) async throws -> [String] {
+        let report = try await scan(template: template, options: options)
+        return report.orderedKeys
     }
     
     // MARK: - Private

@@ -54,7 +54,7 @@ public struct DocumentTextExtractorService: Sendable {
         )
     }
     
-    nonisolated func extract(from originalURL: URL) throws -> ExtractionResult {
+    nonisolated func extract(from originalURL: URL) async throws -> ExtractionResult {
         var diagnostics = ExtractionResult.Diagnostics(
             originalURL: originalURL,
             fileExtension: originalURL.pathExtension.lowercased(),
