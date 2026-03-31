@@ -22,7 +22,7 @@ struct DocumentDataRowView<Key: Hashable>: View {
             Text(title)
             
             VStack(alignment: .trailing) {
-                TextField("", text: $text, prompt: Text(placeholder))
+                TextField("", text: $text, prompt: Text(placeholder), axis: .horizontal)
                     .focused($focusedKey, equals: key)
                 
                 if let errorText {
