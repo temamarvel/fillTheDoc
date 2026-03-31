@@ -74,6 +74,15 @@ struct DocumentDataFormView: View {
             Divider()
             
             HStack {
+                Button("Валидация с ФНС") {
+                    Task{
+                        do {
+                            try await model.validateFieldsWithReference()
+                        } catch {
+                            errorText = error.localizedDescription
+                        }
+                    }
+                }
                 Spacer()
                 Button("Применить") {
                     do {
