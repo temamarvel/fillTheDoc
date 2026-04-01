@@ -75,7 +75,14 @@ struct MainView: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
+                
+                if let updateInfo = viewModel.updateStore.updateInfo {
+                    UpdateBadgeView(updateInfo: updateInfo)
+                }
             }
+        }
+        .task {
+            await viewModel.updateStore.checkForUpdates()
         }
         .padding(20)
         .fileExporter(

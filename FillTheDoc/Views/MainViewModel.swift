@@ -9,6 +9,7 @@ final class MainViewModel {
     // MARK: - Dependencies
     
     let apiKeyStore: APIKeyStore
+    let updateStore: AppUpdateStore
     private let scanner: DocxTemplatePlaceholderScanner
     private let replacer: DocxPlaceholderReplacer
     private let googleSheetsRowBuilder: GoogleSheetsRowBuilding
@@ -59,12 +60,14 @@ final class MainViewModel {
     
     init(
         apiKeyStore: APIKeyStore,
+        updateStore: AppUpdateStore,
         scanner: DocxTemplatePlaceholderScanner,
         replacer: DocxPlaceholderReplacer,
         googleSheetsRowBuilder: GoogleSheetsRowBuilding,
         extractorService: DocumentTextExtractorService
     ) {
         self.apiKeyStore = apiKeyStore
+        self.updateStore = updateStore
         self.scanner = scanner
         self.replacer = replacer
         self.googleSheetsRowBuilder = googleSheetsRowBuilder
@@ -73,8 +76,16 @@ final class MainViewModel {
     
     /// Convenience init with default dependencies for production use.
     convenience init(apiKeyStore: APIKeyStore) {
+        let updateStore = AppUpdateStore(
+            service: AppUpdateService(
+                owner: "temamarvel",
+                repo: "FillTheDoc"
+            )
+        )
+        
         self.init(
             apiKeyStore: apiKeyStore,
+            updateStore: updateStore,
             scanner: DocxTemplatePlaceholderScanner(),
             replacer: DocxPlaceholderReplacer(),
             googleSheetsRowBuilder: GoogleSheetsRowBuilder(),
