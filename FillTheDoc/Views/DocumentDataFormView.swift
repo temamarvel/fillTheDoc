@@ -17,6 +17,7 @@ struct DocumentDataFormView: View {
     @State private var errorText = ""
     @State private var fee = ""
     @State private var minFee = ""
+    @State private var docNumber = ""
     
     @FocusState private var focusedKey: Key?
     
@@ -44,6 +45,10 @@ struct DocumentDataFormView: View {
         self.onApply = onApply
     }
     
+    private var docNumberError: String? {
+        docNumber.isEmpty ? "Номер договора не может быть пустым" : nil
+    }
+    
     private var feeError: String? {
         Validators.percentage(fee)
     }
@@ -55,6 +60,10 @@ struct DocumentDataFormView: View {
     var body: some View {
         VStack{
             Form {
+                Section("Документ"){
+                    DocumentDataRowView(title: "Номер договора", placeholder: "yyyy-mm-#", text: $docNumber, errorColor: .red, errorText: docNumberError, focusedKey: $focusedKey, key: .address)
+                }
+                
                 Section("Комиссия"){
                     DocumentDataRowView(title: "Комиссия, %", placeholder: "10", text: $fee, errorColor: .red, errorText: feeError, focusedKey: $focusedKey, key: .address)
                     
@@ -83,7 +92,7 @@ struct DocumentDataFormView: View {
                 Button("Применить") {
                     do {
                         let validatedCompanyDatails = try model.buildResult()
-                        let result = DocumentData(fee: fee.trimmed, minFee: minFee.trimmed, companyDetails: validatedCompanyDatails)
+                        let result = DocumentData(docNumber: docNumber, fee: fee.trimmed, minFee: minFee.trimmed, companyDetails: validatedCompanyDatails)
                         onApply(result)
                     } catch {
                         errorText = error.localizedDescription

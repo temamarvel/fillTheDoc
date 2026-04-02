@@ -8,6 +8,7 @@
 import Foundation
 
 struct DocumentData: Codable {
+    let docNumber: String?
     let fee: String?
     let minFee: String?
     let companyDetails: CompanyDetails?
@@ -22,6 +23,10 @@ struct DocumentData: Codable {
     
     func asDictionary() -> [String: String] {
         var dict = companyDetails?.asDictionary() ?? [:]
+        
+        if let fee = docNumber?.trimmedNilIfEmpty {
+            dict["doc_number"] = docNumber
+        }
         
         if let fee = fee?.trimmedNilIfEmpty {
             dict["fee"] = fee
