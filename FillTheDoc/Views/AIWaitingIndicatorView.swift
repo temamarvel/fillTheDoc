@@ -9,7 +9,7 @@ import SwiftUI
 import Shimmer
 
 struct AIWaitingIndicatorView: View {
-    var size: CGFloat = 160
+    var size: CGFloat = 100
     
     var body: some View {
         ZStack {
