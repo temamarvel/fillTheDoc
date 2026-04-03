@@ -11,10 +11,11 @@ import SwiftUI
 import Combine
 
 @MainActor
+@Observable
 final class APIKeyStore: ObservableObject {
-    @Published private(set) var apiKey: String?
-    @Published var isPromptPresented: Bool = false
-    @Published var errorText: String?
+    private(set) var apiKey: String?
+    var isPromptPresented: Bool = false
+    var errorText: String?
     
     private let keychain: KeychainService
     private let account: String

@@ -22,14 +22,14 @@ struct MainView: View {
                 DropZoneCardView(
                     title: "Шаблон (DOCX)",
                     isValid: viewModel.isTemplateValid,
-                    path: $viewModel.templatePath,
+                    path: viewModel.templatePath,
                     onDropURLs: { viewModel.handleTemplateDrop($0) }
                 )
                 
                 DropZoneCardView(
                     title: "Реквизиты (DOC, DOCX, PDF, XLS, XLSX)",
                     isValid: viewModel.isDetailsValid,
-                    path: $viewModel.detailsPath,
+                    path: viewModel.detailsPath,
                     onDropURLs: { viewModel.handleDetailsDrop($0) }
                 )
             }

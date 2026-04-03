@@ -10,7 +10,7 @@ struct DropZoneCardView<Bottom: View>: View {
     var subtitle: String? = nil
     
     let isValid: Bool
-    @Binding var path: String
+    let path: String
     
     /// Если true — карточка не фиксирует высоту и растёт под контентом (включая bottom).
     var heightToContent: Bool = true
@@ -30,7 +30,7 @@ struct DropZoneCardView<Bottom: View>: View {
         title: String,
         subtitle: String? = nil,
         isValid: Bool,
-        path: Binding<String>,
+        path: String,
         onDropURLs: @escaping ([URL]) -> Void,
         heightToContent: Bool = true,
         fixedHeight: CGFloat = 120,
@@ -39,7 +39,7 @@ struct DropZoneCardView<Bottom: View>: View {
         self.title = title
         self.subtitle = subtitle
         self.isValid = isValid
-        self._path = path
+        self.path = path
         self.onDropURLs = onDropURLs
         self.heightToContent = heightToContent
         self.bottom = bottom()
@@ -162,7 +162,7 @@ extension DropZoneCardView where Bottom == EmptyView {
         title: String,
         subtitle: String? = nil,
         isValid: Bool,
-        path: Binding<String>,
+        path: String,
         onDropURLs: @escaping ([URL]) -> Void,
         heightToContent: Bool = true,
         fixedHeight: CGFloat = 120
@@ -194,7 +194,7 @@ private struct DropZoneCardPreviewContainer: View {
                 title: "Шаблон (DOCX)",
                 subtitle: "Перетащи сюда файл шаблона",
                 isValid: false,
-                path: $emptyPath,
+                path: emptyPath,
                 onDropURLs: { _ in }
             )
             
@@ -203,7 +203,7 @@ private struct DropZoneCardPreviewContainer: View {
                 title: "Реквизиты",
                 subtitle: "Файл с данными клиента",
                 isValid: true,
-                path: $validPath,
+                path: validPath,
                 onDropURLs: { _ in }
             )
             
@@ -212,7 +212,7 @@ private struct DropZoneCardPreviewContainer: View {
                 title: "Обработка",
                 subtitle: "Извлечение данных из документа",
                 isValid: true,
-                path: $loadingPath,
+                path: loadingPath,
                 onDropURLs: { _ in }
             ) {
                 VStack(spacing: 12) {
