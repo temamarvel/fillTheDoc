@@ -98,14 +98,11 @@ struct DocumentDataFormView: View {
                         errorText = error.localizedDescription
                     }
                 }
-                .disabled(model.hasErrors || feeError != nil || minFeeError != nil)
+                .disabled(model.hasErrors || feeError != nil || minFeeError != nil || docNumberError != nil)
                 .keyboardShortcut(.defaultAction)
             }
         }
         .formStyle(.grouped)
-        .onAppear(){
-            model.validateAllFields()
-        }
         .onChange(of: focusedKey) { old, new in
             guard let lost = old, lost != new else { return }
             model.scheduleReferenceValidation()
@@ -150,7 +147,7 @@ struct DocumentDataFormView: View {
     }
 }
 
-#Preview("Interactive") {
+#Preview {
     PreviewWrapper()
 }
 
