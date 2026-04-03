@@ -24,7 +24,7 @@ struct DocumentData: Codable {
     func asDictionary() -> [String: String] {
         var dict = companyDetails?.asDictionary() ?? [:]
         
-        if let fee = docNumber?.trimmedNilIfEmpty {
+        if let docNumber = docNumber?.trimmedNilIfEmpty {
             dict["doc_number"] = docNumber
         }
         
