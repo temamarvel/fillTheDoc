@@ -18,8 +18,8 @@ final class AppUpdateStore {
     var isChecking = false
     var errorText: String?
 
-    init(service: AppUpdateService) {
-        self.service = service
+    init() {
+        self.service = AppUpdateService(owner: "temamarvel", repo: "FillTheDoc")
     }
 
     var currentVersionText: String {
