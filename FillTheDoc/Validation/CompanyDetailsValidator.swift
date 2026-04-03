@@ -123,7 +123,7 @@ public actor CompanyDetailsValidator {
                 guard let llmINN = state.value else { return nil }
                 let apiINN = companyInfo.inn.map { $0.digitsOnly }
                 if let apiINN, apiINN != llmINN.digitsOnly {
-                    return .warning("ИНН не совпадает с DaData.")
+                    return .warning("ИНН не совпадает с ФНС.")
                 }
                 return nil
                 
@@ -131,7 +131,7 @@ public actor CompanyDetailsValidator {
                 guard let llmKPP = state.value else { return nil }
                 if let apiKPP = companyInfo.kpp.map({ $0.digitsOnly }),
                    apiKPP != llmKPP.digitsOnly {
-                    return .warning("КПП не совпадает с DaData.")
+                    return .warning("КПП не совпадает с ФНС.")
                 }
                 return nil
                 
@@ -139,7 +139,7 @@ public actor CompanyDetailsValidator {
                 guard let llmOGRN = state.value else { return nil }
                 if let apiOGRN = companyInfo.ogrn.map({ $0.digitsOnly }),
                    apiOGRN != llmOGRN.digitsOnly {
-                    return .warning("ОГРН/ОГРНИП не совпадает с DaData.")
+                    return .warning("ОГРН/ОГРНИП не совпадает с ФНС.")
                 }
                 return nil
                 
@@ -158,7 +158,7 @@ public actor CompanyDetailsValidator {
                 let contains = Validators.containsNormalized(llmName, apiName)
                 
                 if !(contains || sim >= policy.nameSimilarityThreshold) {
-                    return .warning("Название слабо похоже на DaData (sim=\(String(format: "%.2f", sim))).")
+                    return .warning("Название не совпадает с ФНС (схожесть: \(String(format: "%.2f", sim))).")
                 }
                 return nil
                 
@@ -167,8 +167,8 @@ public actor CompanyDetailsValidator {
                 if let apiCEO = companyInfo.management?.name, !apiCEO.isEmpty {
                     let sim = Validators.jaccardSimilarity(llmCEO, apiCEO)
                     let contains = Validators.containsNormalized(llmCEO, apiCEO)
-                    if !(contains || sim >= 0.70) {
-                        return .warning("ФИО руководителя слабо похоже на DaData (sim=\(String(format: "%.2f", sim))).")
+                    if !(contains || sim >= policy.nameSimilarityThreshold) {
+                        return .warning("ФИО руководителя не совпадает с ФНС (схожесть: \(String(format: "%.2f", sim))).")
                     }
                 }
                 return nil
@@ -183,8 +183,8 @@ public actor CompanyDetailsValidator {
                 if let apiAddress = companyInfo.address?.value, !apiAddress.isEmpty {
                     let sim = Validators.jaccardSimilarity(llmAddress, apiAddress)
                     let contains = Validators.containsNormalized(llmAddress, apiAddress)
-                    if !(contains || sim >= 0.70) {
-                        return .warning("Адрес слабо похож на DaData \(apiAddress) (sim=\(String(format: "%.2f", sim))).")
+                    if !(contains || sim >= policy.addressSimilarityThreshold) {
+                        return .warning("Адрес не совпадает с ФНС \(apiAddress) (схожесть: \(String(format: "%.2f", sim))).")
                     }
                 }
                 
