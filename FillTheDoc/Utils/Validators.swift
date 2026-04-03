@@ -199,12 +199,12 @@ enum Validators {
         guard !t.isEmpty else { return .error("Поле не может быть пустым") }
         
         // Паттерн: одно или несколько слов (фамилия), затем инициалы с точками
-        // Примеры: "Иванов И.И.", "Иванов-Петров И. И.", "Иванов И."
+        // Примеры: " И.И. Иванов", " И. И. Иванов-Петров", " И. Иванов"
         let pattern = #"^[А-ЯЁA-Z]\.\s*(?:[А-ЯЁA-Z]\.\s*)?[А-ЯЁA-Z][а-яёa-zА-ЯЁA-Z\-]+$"#
         let matches = t.range(of: pattern, options: .regularExpression) != nil
         
         if !matches {
-            return .warning("Ожидается формат «Фамилия И.О.»")
+            return .warning("Ожидается формат «И.О. Фамилия»")
         }
         
         return nil
