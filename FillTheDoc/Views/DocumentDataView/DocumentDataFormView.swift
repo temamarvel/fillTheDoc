@@ -61,13 +61,13 @@ struct DocumentDataFormView: View {
         VStack{
             Form {
                 Section("Документ"){
-                    DocumentDataRowView(title: "Номер договора", placeholder: "yyyy-mm-#", text: $docNumber, errorColor: .red, errorText: docNumberError, focusedKey: $focusedKey, key: .address)
+                    DocumentDataFieldView(title: "Номер договора", placeholder: "yyyy-mm-#", text: $docNumber, errorColor: .red, errorText: docNumberError, focusedKey: $focusedKey, key: .address)
                 }
                 
                 Section("Комиссия"){
-                    DocumentDataRowView(title: "Комиссия, %", placeholder: "10", text: $fee, errorColor: .red, errorText: feeError, focusedKey: $focusedKey, key: .address)
+                    DocumentDataFieldView(title: "Комиссия, %", placeholder: "10", text: $fee, errorColor: .red, errorText: feeError, focusedKey: $focusedKey, key: .address)
                     
-                    DocumentDataRowView(title: "Мин. комиссия, руб", placeholder: "10", text: $minFee, errorColor: .red, errorText: minFeeError, focusedKey: $focusedKey, key: .address)
+                    DocumentDataFieldView(title: "Мин. комиссия, руб", placeholder: "10", text: $minFee, errorColor: .red, errorText: minFeeError, focusedKey: $focusedKey, key: .address)
                 }
                 
                 Section("Реквизиты компании") {
@@ -117,7 +117,7 @@ struct DocumentDataFormView: View {
         let issue = state.issue
         let color = issueColor(for: issue)
         
-        DocumentDataRowView(
+        DocumentDataFieldView(
             title: model.title(for: key),
             placeholder: model.placeholder(for: key),
             text: binding(for: key),

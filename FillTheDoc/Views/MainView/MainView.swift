@@ -19,14 +19,14 @@ struct MainView: View {
                 .font(.title2.weight(.semibold))
             
             HStack(spacing: 16) {
-                DropZoneCardView(
+                DropZoneView(
                     title: "Шаблон (DOCX)",
                     isValid: viewModel.isTemplateValid,
                     path: viewModel.templatePath,
                     onDropURLs: { viewModel.handleTemplateDrop($0) }
                 )
                 
-                DropZoneCardView(
+                DropZoneView(
                     title: "Реквизиты (DOC, DOCX, PDF, XLS, XLSX)",
                     isValid: viewModel.isDetailsValid,
                     path: viewModel.detailsPath,
@@ -36,7 +36,7 @@ struct MainView: View {
             
             Group {
                 if let googleSheetsRow = viewModel.googleSheetsRow, !googleSheetsRow.isEmpty {
-                    CodeBlockView(content: googleSheetsRow)
+                    DocumentDataCopyStringPresenterView(content: googleSheetsRow)
                 } else {
                     if let details = viewModel.details {
 //                        let keys = viewModel.templatePlaceholders.compactMap {
@@ -86,7 +86,7 @@ struct MainView: View {
                 }
                 
                 if let updateInfo = viewModel.updateStore.updateInfo {
-                    UpdateBadgeView(updateInfo: updateInfo)
+                    AppUpdateBadgeView(updateInfo: updateInfo)
                 }
             }
         }

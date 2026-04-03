@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-struct UpdateBadgeView: View {
+struct AppUpdateBadgeView: View {
     let updateInfo: AppUpdateInfo
     @State private var isPopoverPresented = false
 
@@ -59,7 +59,7 @@ struct UpdateBadgeView: View {
             .foregroundStyle(.secondary)
         
         
-        UpdateBadgeView(
+        AppUpdateBadgeView(
             updateInfo: AppUpdateInfo(
                 currentVersion: "1.3",
                 latestVersion: "1.4",

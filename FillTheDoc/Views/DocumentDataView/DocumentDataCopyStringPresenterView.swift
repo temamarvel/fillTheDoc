@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-struct CodeBlockView: View {
+struct DocumentDataCopyStringPresenterView: View {
     let content: String
     @State private var copied = false
 

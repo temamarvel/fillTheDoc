@@ -12,7 +12,7 @@ final class MainViewModel {
     let updateStore: AppUpdateStore
     private let scanner: DocxTemplatePlaceholderScanner
     private let replacer: DocxPlaceholderReplacer
-    private let googleSheetsRowBuilder: GoogleSheetsRowBuilding
+    private let googleSheetsRowBuilder: DocumentDataCopyStringBuilder
     private let extractorService: DocumentTextExtractorService
     
     // MARK: - State (paths)
@@ -63,7 +63,7 @@ final class MainViewModel {
         updateStore: AppUpdateStore,
         scanner: DocxTemplatePlaceholderScanner,
         replacer: DocxPlaceholderReplacer,
-        googleSheetsRowBuilder: GoogleSheetsRowBuilding,
+        googleSheetsRowBuilder: DocumentDataCopyStringBuilder,
         extractorService: DocumentTextExtractorService
     ) {
         self.apiKeyStore = apiKeyStore
@@ -90,7 +90,7 @@ final class MainViewModel {
             updateStore: updateStore,
             scanner: DocxTemplatePlaceholderScanner(),
             replacer: DocxPlaceholderReplacer(),
-            googleSheetsRowBuilder: GoogleSheetsRowBuilder(),
+            googleSheetsRowBuilder: DocumentDataCopyStringBuilder(),
             extractorService: DocumentTextExtractorService()
         )
     }

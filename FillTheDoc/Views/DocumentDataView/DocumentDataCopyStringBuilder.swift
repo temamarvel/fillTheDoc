@@ -9,12 +9,7 @@
 import Foundation
 import AppKit
 
-protocol GoogleSheetsRowBuilding {
-    func makeRow(from data: DocumentData) -> String
-    func copyToPasteboard(_ row: String)
-}
-
-final class GoogleSheetsRowBuilder: GoogleSheetsRowBuilding {
+final class DocumentDataCopyStringBuilder {
     
     func makeRow(from data: DocumentData) -> String {
         let values: [String] = [

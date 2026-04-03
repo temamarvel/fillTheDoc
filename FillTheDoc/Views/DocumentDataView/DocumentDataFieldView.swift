@@ -8,7 +8,7 @@
 import SwiftUI
 
 
-struct DocumentDataRowView<Key: Hashable>: View {
+struct DocumentDataFieldView<Key: Hashable>: View {
     let title: String
     let placeholder: String
     @Binding var text: String
