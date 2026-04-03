@@ -88,7 +88,9 @@ final class CompanyDetailsModel {
     /// Вызывается из View при потере фокуса полем.
     /// Запускает удалённую проверку с задержкой 300 мс; предыдущая задача отменяется.
     func scheduleReferenceValidation() {
-        let lookupKey = fields[.ogrn]?.value ?? fields[.inn]?.value
+        let lookupKey =
+        fields[.ogrn]?.value?.trimmedNilIfEmpty ??
+        fields[.inn]?.value?.trimmedNilIfEmpty
         guard let lookupKey, !lookupKey.isEmpty else { return }
         
         // Не запускаем повторно по тому же ключу
